@@ -22,7 +22,6 @@ sudo apt-get install gdal-bin
 sudo apt install postgresql-client-12
 sudo apt install postgis
 sudo apt-get install p7zip-full
-
 ```
 
 
@@ -32,13 +31,13 @@ export PGHOST=localhost
 export PGPORT=5432
 export PGDATABASE=flood
 export PGUSER=username
-export PGPASS=password
+export PGPASSWORD=password
 ```
 			
 
-3. Download the repo and run the Makefile
+3. Download the repo and run the setup bash file
 ```sh
 git clone git@github.com:FoundrySpatial/flood-project.git
 cd flood-project
-sh setup.sh
+./setup.sh
 ```
