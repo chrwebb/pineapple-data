@@ -2,6 +2,7 @@
 
 # Run initial setup of required schemas
 psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/initialize_schema.sql
+psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/initialize_data_model.sql
 
 # Make a temporary directory to store raw data
 mkdir -p data
