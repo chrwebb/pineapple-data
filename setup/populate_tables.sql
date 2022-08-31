@@ -28,22 +28,3 @@ INSERT INTO data.networks (network_name, network_name_long) VALUES
 ('BC MoTI', 'BC Ministry of Transportation and Infrastructure - Road Weather Stations'),
 ('NOAA-hydrometric', 'National Oceanic and Atmospheric Administration - Hydrometric Network'),
 ('NOAA-Snotel', 'National Oceanic and Atmospheric Administration - Snow Conditions');
-
-
-INSERT INTO data.assets (
-	asset_name, 
-	asset_description, 
-	parent_id, 
-	latitude, 
-	longitude, 
-	watershed_feature_id, 
-	aoi_geom4326,
-	aoi_area_m2,
-	land_disturbance_fire, -- 0 | 1 | 2 -- trigger
-	land_disturbance_road, -- 0 | 1 | 2 -- trigger
-	fire_past_2_years_m2,
-	fire_past_5_years_m2,
-	length_of_roads_m
-) VALUES
-
-('Section 2', 'Coquihalla Summit to Merritt', 1, 49.5941, -121.0995, 10644179, ST_Multi(ST_Buffer(ST_SetSRID(ST_Point(-121.0995, 49.5941), 4326), 0.001)), ST_Area(ST_Buffer(ST_SetSRID(ST_Point(-121.0995, 49.5941), 4326), 0.001)::geography), 0, 0, 1000, 2000, 300); -- BC MOTI asset

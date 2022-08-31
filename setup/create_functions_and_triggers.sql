@@ -1,4 +1,4 @@
--- data.assets triggers
+-- data.assets triggers: 
 -- trigger function
 CREATE OR REPLACE FUNCTION fn_geo_update_event() RETURNS trigger AS 
   $BODY$  
@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION fn_geo_update_event() RETURNS trigger AS
 	-- as this is an after trigger, NEW contains all the information we need even for INSERT
 	NEW.geom4326 =  ST_SetSRID(ST_MakePoint(NEW.longitude,NEW.latitude), 4326);
 	NEW.created = now() at time zone 'utc';
-	RAISE NOTICE 'UPDATING geo data for asset_id: %, asset_name: %, [%,%]' , NEW.asset_id, NEW.asset_name, NEW.latitude, NEW.longitude;	
+	RAISE NOTICE 'UPDATING geom4326 field for asset_id: %, asset_name: %, [%,%]' , NEW.asset_id, NEW.asset_name, NEW.latitude, NEW.longitude;	
     RETURN NEW; 
   END;
  $BODY$
