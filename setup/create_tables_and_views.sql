@@ -98,6 +98,7 @@ CREATE TABLE data.sentinels
 	station_name VARCHAR(50),
 	latitude double precision,
 	longitude double precision,
+	elevation_m double precision,
 	geom4326 geometry(Point, 4326),
 	hr24_5yr real NOT NULL, --Sina needs to populate this
 	hr24_20yr real NOT NULL,
