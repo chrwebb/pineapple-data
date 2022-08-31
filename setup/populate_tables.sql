@@ -22,9 +22,9 @@ INSERT INTO data.risk_levels (risk_level, lower_bound, upper_bound, risk_label) 
 (4, 50.0, 100.0, 'Extreme'),
 (5, 100.0, Null, 'Exceptional');
 
-INSERT INTO data.network (network_name,	network_name_long) VALUES
+INSERT INTO data.networks (network_name, network_name_long) VALUES
 ('ECCC','Environment Canada'),
 ('MOE-ASP','BC Ministry of Environment- Automated Snow Pillow Network'),
 ('BC MoTI', 'BC Ministry of Transportation and Infrastructure - Road Weather Stations'),
-('NOAA - hydrometric', 'National Oceanic and Atmospheric Administration - Hydrometric Network'),
-('NOAA - Snotel', 'National Oceanic and Atmospheric Administration - Snow Conditions');
+('NOAA-hydrometric', 'National Oceanic and Atmospheric Administration - Hydrometric Network'),
+('NOAA-Snotel', 'National Oceanic and Atmospheric Administration - Snow Conditions');

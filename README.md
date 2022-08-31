@@ -29,7 +29,7 @@ sudo apt-get install p7zip-full
 ```sh
 export PGHOST=localhost
 export PGPORT=5432
-export PGDATABASE=flood
+export PGDATABASE=pineapple
 export PGUSER=username
 export PGPASSWORD=password
 ```
