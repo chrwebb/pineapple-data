@@ -17,3 +17,11 @@ mkdir utils
 
 rm -f utils/db.ini
 printf "[pg_connection]\nhost=$PGHOST\ndbname=$PGDATABASE\nuser=$PGUSER\nport=$PGPORT\npassword=$PGPASSWORD" > utils/db.ini
+
+unzip -qun data/test/fires_4326.zip -d data/test/
+ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fires_4326.geojson -nln staging.fire_polygons
+rm data/test/fires_4326.geojson
+
+unzip -qun data/test/roads_4326.zip -d data/test/
+ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/roads_4326.geojson -nln staging.road_lines
+rm data/test/roads_4326.geojson
