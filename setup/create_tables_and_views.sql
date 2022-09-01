@@ -101,10 +101,12 @@ CREATE TABLE data.sentinels
 	elevation_m double precision,
 	geom4326 geometry(Point, 4326),
 	hr24_5yr real NOT NULL, --Sina needs to populate this
+	hr24_10yr real NOT NULL,
 	hr24_20yr real NOT NULL,
 	hr24_50yr real NOT NULL,
 	hr24_100yr real NOT NULL,
 	hr48_5yr real NOT NULL, --Sina needs to populate this
+	hr48_10yr real NOT NULL,
 	hr48_20yr real NOT NULL,
 	hr48_50yr real NOT NULL,
 	hr48_100yr real NOT NULL,
