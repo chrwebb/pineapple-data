@@ -46,9 +46,9 @@ CREATE TABLE data.climate_normals_1991_2020 (
 	value double precision  NOT NULL
 );
 
-DROP TABLE IF EXISTS data.fires;
+DROP TABLE IF EXISTS data.fire_polygons;
 CREATE TABLE data.fires (
-	year smallint  NOT NULL,
+	fire_year smallint  NOT NULL,
 	geom4326 geometry(MultiPolygon,4326)  NOT NULL
 );
 
