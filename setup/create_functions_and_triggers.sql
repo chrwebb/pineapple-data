@@ -76,13 +76,13 @@ AS $BODY$
   BEGIN
       RETURN QUERY
         SELECT
-      json_build_object('forecast', forecast_made_at_utc, 'next_forecast', forecast_made_at_utc + interval '12 hour')
+      json_build_object('forecast', forecast_made_at, 'next_forecast', forecast_made_at + interval '12 hour')
     FROM
       data.assets_forecast
     WHERE
       asset_id=in_asset_id
     ORDER BY 
-      forecast_made_at_utc DESC
+      forecast_made_at DESC
     LIMIT 1;
   END
 $BODY$;
@@ -123,7 +123,7 @@ AS $BODY$
       json_build_object(
         'station_name', sentinel.station_name,
         'station_id', sentinel.station_id,
-        'start_date', storm.storm_date,
+        'start_date', storm.storm_start_date,
         'end_date', storm.storm_date + storm.storm_duration * INTERVAL '1 day',
         'magnitude', storm.storm_magnitude
       )
@@ -150,76 +150,57 @@ AS $BODY$
   BEGIN
       RETURN QUERY
         SELECT
-      json_build_object(
-        'asset_name', asset.asset_name,
-        'asset_description', asset.asset_description,
-        'parent_name', parent.parent_name,
-        'forecast_date', forecast.forecast_date,
-        'value', forecast.sum,
-        'risk_level', forecast.risk_level--,
-        --'return_period', return_period
-      ),
-      asset.aoi_geom4326
-    FROM
-      data.assets asset
-    JOIN
-      data.parents parent
-    ON
-      asset.parent_id=parent.parent_id
-    JOIN
-      (
-        SELECT
-          forecast_daily.asset_id,
-          forecast_daily.forecast_date,
-          sum, 
-          risk_level--,
-          --return_period
-        FROM (
-          SELECT 
-            sum(value),
-            forecast.forecast_3h_utc::date as forecast_date,
-            forecast.asset_id
-          FROM 
-            data.assets_forecast forecast 
-          JOIN 
-            data.models model 
-          ON 
-            forecast.model_id=model.model_id 
-          WHERE 
-            forecast.asset_id=1 
-          AND
-            model.model_id=9
-          GROUP BY 
-            forecast_date, forecast.asset_id
-          ) forecast_daily
-        LEFT JOIN
-          data.risk_levels risk
+          json_build_object(
+            'asset_name', asset.asset_name,
+            'asset_description', asset.asset_description,
+            'parent_name', parent.parent_name,
+            'forecast_date', risk_level.hr24_risk_level,
+            'risk_level', risk_level.hr24_storm_start_date
+          ),
+          asset.aoi_geom4326
+        FROM
+          data.assets asset
+        JOIN 
+          (
+            SELECT
+              asset.asset_id,
+              asset_forecast.forecast_3h::date as hr24_storm_start_date,
+              CASE
+                WHEN sum(asset_forecast.value)<avg(hr24_5yr) THEN 1
+                WHEN sum(asset_forecast.value)>=avg(hr24_5yr) AND sum(asset_forecast.value)<avg(hr24_10yr) THEN 2
+                WHEN sum(asset_forecast.value)>=avg(hr24_10yr) AND sum(asset_forecast.value)<avg(hr24_50yr) THEN 3
+                WHEN sum(asset_forecast.value)>=avg(hr24_50yr) AND sum(asset_forecast.value)<avg(hr24_100yr) THEN 4
+                WHEN sum(asset_forecast.value)>=avg(hr24_100yr) THEN 5
+              END as hr24_risk_level
+            FROM
+              data.assets asset
+            JOIN
+              data.pf_grids_aep_rollup aep
+            ON
+              asset.watershed_feature_id=aep.watershed_feature_id
+            JOIN
+              data.assets_forecast asset_forecast
+            ON
+              asset.asset_id=asset_forecast.asset_id
+            WHERE
+              asset.asset_id=in_asset_id
+            AND
+              asset_forecast.model_id=9
+            GROUP BY
+              asset_forecast.forecast_3h::date,
+              asset.asset_id
+            ORDER BY
+              hr24_risk_level DESC
+            LIMIT 1
+          ) risk_level
         ON
-          (
-            risk.lower_bound<=forecast_daily.sum
-            AND
-            risk.upper_bound>forecast_daily.sum
-          )
-          OR
-          (
-            risk.lower_bound<=forecast_daily.sum
-            AND
-            risk.upper_bound is Null
-          )
-          OR
-          (
-            risk.upper_bound>forecast_daily.sum
-            AND
-            risk.lower_bound is Null
-          )
-        ORDER BY
-          risk_level DESC
-        LIMIT 1
-      ) forecast
-    ON
-      forecast.asset_id=asset.asset_id
-    WHERE
-        asset.asset_id=1;
+          asset.asset_id=risk_level.asset_id
+        JOIN
+          data.parents parent
+        ON
+          asset.parent_id=parent.parent_id
+        WHERE
+          asset.asset_id=in_asset_id;
   END
 $BODY$;
 
