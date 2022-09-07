@@ -15,10 +15,3 @@ INSERT INTO data.models (model_id, model_name, unit_id, forecast_interval, metho
 (7, 'nam-12km', 1, '3 hours', 'sum', 'North American Mesoscale 12-km resolution'),
 (8, 'swe', 1, '3 hours', 'sum', 'National Water Model Snow Water Equivalent'),
 (9, 'foundry-ensemble', 1, '3 hours', 'sum', 'Output of: (Average of models 1 through 7) + model 8');
-
-INSERT INTO data.risk_levels (risk_level, lower_bound, upper_bound, risk_label) VALUES 
-(1, Null, 5.0, 'Low'),
-(2, 5.0, 10.0, 'Moderate'),
-(3, 10.0, 50.0, 'High'),
-(4, 50.0, 100.0, 'Extreme'),
-(5, 100.0, Null, 'Exceptional');
