@@ -479,7 +479,7 @@ CROSS JOIN
 INSERT INTO data.assets_forecast(
 	asset_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -830,7 +830,7 @@ VALUES
 INSERT INTO data.assets_forecast(
 	asset_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -838,7 +838,7 @@ WITH ensemble_rain AS (
 	SELECT
 		1::int as asset_id,
 		forecast_made_at,
-		forecast_3h,
+		forecast_1h,
 		AVG(value) as ensemble,
 		9::int as model_id
 	FROM
@@ -848,14 +848,14 @@ WITH ensemble_rain AS (
 	and
 		asset_id = 1 
 	GROUP BY 
-		forecast_3h, forecast_made_at
+		forecast_1h, forecast_made_at
 	ORDER BY 
-		forecast_3h
+		forecast_1h
 	)
 	SELECT
 		ensemble_rain.asset_id,
 		ensemble_rain.forecast_made_at,
-		ensemble_rain.forecast_3h,
+		ensemble_rain.forecast_1h,
 		ensemble_rain.model_id,
 		ensemble_rain.ensemble + a.value as rain_plus_snow
 	FROM
@@ -863,7 +863,7 @@ WITH ensemble_rain AS (
 	JOIN
 		ensemble_rain
 	USING
-		(forecast_3h, asset_id)
+		(forecast_1h, asset_id)
 	WHERE
 		a.model_id = 8; -- snow melt
 
@@ -871,7 +871,7 @@ WITH ensemble_rain AS (
 INSERT INTO data.assets_forecast (
 	asset_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -890,7 +890,7 @@ WITH no_data_yet AS (
 SELECT 
 	no_data_yet.asset_id,
 	seed.forecast_made_at, 
-	seed.forecast_3h,
+	seed.forecast_1h,
 	seed.model_id,
 	seed.value
 FROM 
@@ -899,7 +899,7 @@ CROSS JOIN
 (
 	SELECT
 		forecast_made_at,
-		forecast_3h,
+		forecast_1h,
 		model_id,
 		value*(random() *0.2 + 0.9) as value
 	FROM
@@ -914,14 +914,14 @@ CROSS JOIN
 INSERT INTO data.assets_forecast (
 	asset_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
 	SELECT
 		asset_id,
 		'2021-11-13 00:00:00-08'::timestamp with time zone as forecast_made_at,
-		forecast_3h,
+		forecast_1h,
 		model_id,
 		value*(random() * 0.1 + 0.8) as value
 	FROM
@@ -933,7 +933,7 @@ INSERT INTO data.assets_forecast (
 INSERT INTO data.sentinels_forecast(
 	sentinel_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -1284,7 +1284,7 @@ VALUES
 INSERT INTO data.sentinels_forecast(
 	sentinel_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -1292,7 +1292,7 @@ WITH ensemble_rain AS (
 	SELECT
 		1::int as sentinel_id,
 		forecast_made_at,
-		forecast_3h,
+		forecast_1h,
 		AVG(value) as ensemble,
 		9::int as model_id
 	FROM
@@ -1302,14 +1302,14 @@ WITH ensemble_rain AS (
 	and
 		sentinel_id = 1 
 	GROUP BY 
-		forecast_3h, forecast_made_at
+		forecast_1h, forecast_made_at
 	ORDER BY 
-		forecast_3h
+		forecast_1h
 	)
 	SELECT
 		ensemble_rain.sentinel_id,
 		ensemble_rain.forecast_made_at,
-		ensemble_rain.forecast_3h,
+		ensemble_rain.forecast_1h,
 		ensemble_rain.model_id,
 		ensemble_rain.ensemble + a.value as rain_plus_snow
 	FROM
@@ -1317,7 +1317,7 @@ WITH ensemble_rain AS (
 	JOIN
 		ensemble_rain
 	USING
-		(forecast_3h, sentinel_id)
+		(forecast_1h, sentinel_id)
 	WHERE
 		a.model_id = 8; -- snow melt
 
@@ -1325,7 +1325,7 @@ WITH ensemble_rain AS (
 INSERT INTO data.sentinels_forecast (
 	sentinel_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -1344,7 +1344,7 @@ WITH no_data_yet AS (
 SELECT 
 	no_data_yet.sentinel_id,
 	seed.forecast_made_at, 
-	seed.forecast_3h,
+	seed.forecast_1h,
 	seed.model_id,
 	seed.value
 FROM 
@@ -1353,7 +1353,7 @@ CROSS JOIN
 (
 	SELECT
 		forecast_made_at,
-		forecast_3h,
+		forecast_1h,
 		model_id,
 		value*(random() *0.2 + 0.9) as value
 	FROM
@@ -1368,14 +1368,14 @@ CROSS JOIN
 INSERT INTO data.sentinels_forecast (
 	sentinel_id,
 	forecast_made_at,
-	forecast_3h,
+	forecast_1h,
 	model_id,
 	value
 )
 	SELECT
 		sentinel_id,
 		'2021-11-13 00:00:00-08'::timestamp with time zone as forecast_made_at,
-		forecast_3h,
+		forecast_1h,
 		model_id,
 		value*(random() * 0.1 + 0.8) as value
 	FROM
