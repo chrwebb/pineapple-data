@@ -13,11 +13,12 @@ INSERT INTO data.models (model_name, unit_id, forecast_interval, method, model_n
 ('rdps', 1, '3 hours', 'sum', 'Regional Deterministic Prediction System'),
 ('hrdps', 1, '3 hours', 'sum', 'High Resolution Deterministic Prediction System'),
 ('nam-12km', 1, '3 hours', 'sum', 'North American Mesoscale 12-km resolution'),
-('swe', 1, '3 hours', 'sum', 'National Water Model Snow Water Equivalent');
+('swe', 1, '3 hours', 'sum', 'National Water Model Snow Water Equivalent'),
+('foundry', 1, '3 hours', 'sum', 'Foundry Ensemble Model');
 
-INSERT INTO data.risk_levels (risk_level, lower_bound, upper_bound, risk_label) VALUES 
-(1, Null, 5.0, 'Low'),
-(2, 5.0, 10.0, 'Moderate'),
-(3, 10.0, 50.0, 'High'),
-(4, 50.0, 100.0, 'Extreme'),
-(5, 100.0, Null, 'Exceptional');
+INSERT INTO data.risk_levels (risk_level, lower_bound, upper_bound, risk_label, return_period) VALUES 
+(1, Null, 5.0, 'Low', '<5 Year Event'),
+(2, 5.0, 10.0, 'Moderate', '5-10 Year Event'),
+(3, 10.0, 50.0, 'High', '10-50 Year Event'),
+(4, 50.0, 100.0, 'Extreme', '50-100 Year Event'),
+(5, 100.0, Null, 'Exceptional', '100+ Year Event');
