@@ -18,24 +18,6 @@ INSERT INTO data.networks (network_name, network_name_long) VALUES
 ('NOAA-hydrometric', 'National Oceanic and Atmospheric Administration - Hydrometric Network'),
 ('NOAA-Snotel', 'National Oceanic and Atmospheric Administration - Snow Conditions');
 
-INSERT INTO data.assets (
-	asset_name, 
-	asset_description, 
-	parent_id, 
-	latitude, 
-	longitude, 
-	watershed_feature_id, 
-	aoi_geom4326,
-	aoi_area_m2,
-	land_disturbance_fire, -- 0 | 1 | 2 -- trigger
-	land_disturbance_road, -- 0 | 1 | 2 -- trigger
-	fire_past_2_years_m2,
-	fire_past_5_years_m2,
-	length_of_roads_m
-) VALUES
-('Section 2', 'Coquihalla Summit to Merritt', 1, 49.5941, -121.0995, 10644179, ST_Multi(ST_Buffer(ST_SetSRID(ST_Point(-121.0995, 49.5941), 4326), 0.001)), ST_Area(ST_Buffer(ST_SetSRID(ST_Point(-121.0995, 49.5941), 4326), 0.001)::geography), 0, 0, 1000, 2000, 300); -- BC MOTI asset
-
-
 INSERT INTO data.sentinels (
 	sentinel_id,
 	station_id,
@@ -212,6 +194,30 @@ VALUES
 UPDATE data.sentinels SET elevation_m = 300;
 
 
+INSERT INTO data.assets (
+	asset_name, 
+	asset_description, 
+	parent_id, 
+	latitude, 
+	longitude, 
+	geom4326,
+	watershed_feature_id, 
+	aoi_geom4326,
+	aoi_area_m2,
+	land_disturbance_fire, -- 0 | 1 | 2 -- trigger
+	land_disturbance_road, -- 0 | 1 | 2 -- trigger
+	fire_past_2_years_m2,
+	fire_past_5_years_m2,
+	length_of_roads_m
+) VALUES
+('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-121.001396,49.760952,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-121.001396,49.760952,4326),3005), 5000)), 2, 0, 801900, 800000, 417), -- BC MOTI asset
+('kwinshatin cr culv', 'culvert', 1, 50.018529, -120.821957, ST_point(-120.821957,50.018529,4326), 8927602, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)), 0, 0, 1000, 2000, 300), -- BC MOTI asset
+('Godey Creek culv', 'culvert', 1, 50.085495, -120.751576, ST_point(-120.751576,50.085495,4326), 8925604, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)), 0, 0, 1500, 1200, 500), -- BC MOTI asset
+('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)), 2, 0, 171180, 160282, 1500), -- City of Merritt asset
+('James Plant', 'wastewater treatment plant', 3, 49.110502, -122.322585,ST_point(-122.322585, 49.110502,4326), 9981920, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)), 0, 0, 0, 0, 10000), -- City of Abbotsford asset
+('Existing pipeline facilities','segment 5 Kingsvale to Merritt', 4, 50.0167, -120.8508, ST_point(-120.8508,50.0167,4326), 9184965, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)), 2, 0, 701819,601718, 500) -- Tranmountain asset
+;
+
 INSERT INTO data.climate_normals_1991_2020 (
 	watershed_feature_id,
 	month,
@@ -279,6 +285,46 @@ INSERT INTO data.climate_normals_1991_2020 (
 (9981920,11,1,251.285714285714),
 (9981920,12,1,189.714285714286);
 
+-- if any new assets are added, ensure they get randomized data
+INSERT INTO data.climate_normals_1991_2020 (
+	watershed_feature_id,
+	month,
+	unit_id,
+	value
+)
+
+WITH no_data_yet AS (
+	SELECT
+		a.watershed_feature_id
+	FROM
+		data.assets a
+	LEFT JOIN
+		(SELECT watershed_feature_id FROM data.climate_normals_1991_2020 GROUP BY watershed_feature_id) b
+	USING 
+		(watershed_feature_id)
+	WHERE 
+		b.watershed_feature_id IS null
+)
+SELECT 
+	no_data_yet.watershed_feature_id,
+	seed.month, 
+	seed.unit_id,
+	seed.value*(random() *0.2 + 0.9)
+FROM 
+	no_data_yet
+CROSS JOIN
+(
+	SELECT
+		month,
+		unit_id,
+		value
+	FROM
+		data.climate_normals_1991_2020 
+	WHERE 
+		watershed_feature_id = 9981920 -- randomly chosen
+) seed;
+
+
 INSERT INTO data.pf_grids_aep_rollup (
 	watershed_feature_id,
 	hr24_5yr,
@@ -303,36 +349,138 @@ INSERT INTO data.pf_grids_aep_rollup (
 (9981920,26.4338,53,60,70,77,84,94,34,68,76,88,97,105,117),
 (10644179,26.4338,53,60,70,77,84,94,34,68,76,88,97,105,117);
 
+-- if any new assets are added, ensure they get randomized data
+INSERT INTO data.pf_grids_aep_rollup (
+	watershed_feature_id,
+	hr24_5yr,
+	hr24_10yr,
+	hr24_20yr,
+	hr24_50yr,
+	hr24_100yr,
+	hr24_200yr,
+	hr24_500yr,
+	hr48_5yr,
+	hr48_10yr,
+	hr48_20yr,
+	hr48_50yr,
+	hr48_100yr,
+	hr48_200yr,
+	hr48_500yr
+)
+WITH no_data_yet AS (
+	SELECT
+		a.watershed_feature_id
+	FROM
+		data.assets a
+	LEFT JOIN
+		(SELECT watershed_feature_id FROM data.pf_grids_aep_rollup GROUP BY watershed_feature_id) b
+	USING 
+		(watershed_feature_id)
+	WHERE 
+		b.watershed_feature_id IS null
+)
+SELECT 
+	no_data_yet.watershed_feature_id,
+	seed.hr24_5yr*(random() * 0.2 + 0.9) as hr24_5yr,
+	seed.hr24_10yr*(random() * 0.2 + 0.9) as hr24_10yr,
+	seed.hr24_20yr*(random() * 0.2 + 0.9) as hr24_20yr,
+	seed.hr24_50yr*(random() * 0.2 + 0.9) as hr24_50yr,
+	seed.hr24_100yr*(random() * 0.2 + 0.9) as hr24_100yr,
+	seed.hr24_200yr*(random() * 0.2 + 0.9) as hr24_200yr,
+	seed.hr24_500yr*(random() * 0.2 + 0.9) as hr24_500yr,
+	seed.hr48_5yr*(random() * 0.2 + 0.9) as hr48_5yr,
+	seed.hr48_10yr*(random() * 0.2 + 0.9) as hr48_10yr,
+	seed.hr48_20yr*(random() * 0.2 + 0.9) as hr48_20yr,
+	seed.hr48_50yr*(random() * 0.2 + 0.9) as hr48_50yr,
+	seed.hr48_100yr*(random() * 0.2 + 0.9) as hr48_100yr,
+	seed.hr48_200yr*(random() * 0.2 + 0.9) as hr48_200yr,
+	seed.hr48_500yr*(random() * 0.2 + 0.9) as hr48_500yr
+FROM 
+	no_data_yet
+CROSS JOIN
+(
+	SELECT
+		hr24_5yr,
+		hr24_10yr,
+		hr24_20yr,
+		hr24_50yr,
+		hr24_100yr,
+		hr24_200yr,
+		hr24_500yr,
+		hr48_5yr,
+		hr48_10yr,
+		hr48_20yr,
+		hr48_50yr,
+		hr48_100yr,
+		hr48_200yr,
+		hr48_500yr
+	FROM
+		data.pf_grids_aep_rollup 
+	WHERE 
+		watershed_feature_id = 9981920 -- randomly chosen
+) seed;
 
-INSERT INTO data.assets (
-	asset_name, 
-	asset_description, 
-	parent_id, 
-	latitude, 
-	longitude, 
-	geom4326,
-	watershed_feature_id, 
-	aoi_geom4326,
-	aoi_area_m2,
-	land_disturbance_fire, -- 0 | 1 | 2 -- trigger
-	land_disturbance_road, -- 0 | 1 | 2 -- trigger
-	fire_past_2_years_m2,
-	fire_past_5_years_m2,
-	length_of_roads_m
-) VALUES
-('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-121.001396,49.760952,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-121.001396,49.760952,4326),3005), 5000)), 2, 0, 801900, 800000, 417), -- BC MOTI asset
-('kwinshatin cr culv', 'culvert', 1, 50.018529, -120.821957, ST_point(-120.821957,50.018529,4326), 8927602, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)), 0, 0, 1000, 2000, 300), -- BC MOTI asset
-('Godey Creek culv', 'culvert', 1, 50.085495, -120.751576, ST_point(-120.751576,50.085495,4326), 8925604, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)), 0, 0, 1500, 1200, 500), -- BC MOTI asset
-('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)), 2, 0, 171180, 160282, 1500), -- City of Merritt asset
-('James Plant', 'wastewater treatment plant', 3, 49.110502, -122.322585,ST_point(-122.322585, 49.110502,4326), 9981920, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)), 0, 0, 0, 0, 10000), -- City of Abbotsford asset
-('Existing pipeline facilities','segment 5 Kingsvale to Merritt', 4, 50.0167, -120.8508, ST_point(-120.8508,50.0167,4326), 9184965, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)), 2, 0, 701819,601718, 500) -- Tranmountain asset
-;
+INSERT INTO data.assets_antecedant(
+	asset_id,
+	seven_day,
+	thirty_day,
+	unit_id,
+	seven_day_pct_normal,
+	thirty_day_pct_normal,
+	imported_at
+)
+VALUES
+(1,38,210,1,90.81,120.19, now() - INTERVAL '1 day');
 
+INSERT INTO data.assets_antecedant (
+	asset_id,
+	seven_day,
+	thirty_day,
+	unit_id,
+	seven_day_pct_normal,
+	thirty_day_pct_normal,
+	imported_at
+)
+WITH no_data_yet AS (
+	SELECT
+		a.asset_id
+	FROM
+		data.assets a
+	LEFT JOIN
+		(SELECT asset_id FROM data.assets_antecedant GROUP BY asset_id) b
+	USING 
+		(asset_id)
+	WHERE 
+		b.asset_id is null
+)
+SELECT 
+	no_data_yet.asset_id,
+	seed.seven_day*(random() *0.2 + 0.9) as seven_day, 
+	seed.thirty_day*(random() *0.2 + 0.9) as thirty_day,
+	seed.unit_id,
+	seed.seven_day_pct_normal*(random() *0.2 + 0.9) as seven_day_pct_normal, 
+	seed.thirty_day_pct_normal*(random() *0.2 + 0.9) as thirty_day_pct_normal,
+	now() - INTERVAL '1 day'
+FROM 
+	no_data_yet
+CROSS JOIN
+(
+	SELECT
+		seven_day,
+		thirty_day,
+		unit_id,
+		seven_day_pct_normal,
+		thirty_day_pct_normal
+	FROM
+		data.assets_antecedant 
+	WHERE 
+		asset_id = 1
+) seed;
 
 INSERT INTO data.assets_forecast(
 	asset_id,
-	forecast_made_at_utc,
-	forecast_3h_utc,
+	forecast_made_at,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -679,11 +827,114 @@ VALUES
 (1,'2021-11-13 12:00','2021-11-20 9:00',8,0),
 (1,'2021-11-13 12:00','2021-11-20 12:00',8,0);
 
+-- populate the foundry ensemble records
+INSERT INTO data.assets_forecast(
+	asset_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+WITH ensemble_rain AS (
+	SELECT
+		1::int as asset_id,
+		forecast_made_at,
+		forecast_1h,
+		AVG(value) as ensemble,
+		9::int as model_id
+	FROM
+		data.assets_forecast
+	WHERE 
+		model_id in (1,2,3,4,5,6,7)
+	and
+		asset_id = 1 
+	GROUP BY 
+		forecast_1h, forecast_made_at
+	ORDER BY 
+		forecast_1h
+	)
+	SELECT
+		ensemble_rain.asset_id,
+		ensemble_rain.forecast_made_at,
+		ensemble_rain.forecast_1h,
+		ensemble_rain.model_id,
+		ensemble_rain.ensemble + a.value as rain_plus_snow
+	FROM
+		data.assets_forecast a
+	JOIN
+		ensemble_rain
+	USING
+		(forecast_1h, asset_id)
+	WHERE
+		a.model_id = 8; -- snow melt
+
+--populate the rest of the assets data
+INSERT INTO data.assets_forecast (
+	asset_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+WITH no_data_yet AS (
+	SELECT
+		a.asset_id
+	FROM
+		data.assets a
+	LEFT JOIN
+		(SELECT asset_id FROM data.assets_forecast GROUP BY asset_id) b
+	USING 
+		(asset_id)
+	WHERE 
+		b.asset_id is null
+)
+SELECT 
+	no_data_yet.asset_id,
+	seed.forecast_made_at, 
+	seed.forecast_1h,
+	seed.model_id,
+	seed.value
+FROM 
+	no_data_yet
+CROSS JOIN
+(
+	SELECT
+		forecast_made_at,
+		forecast_1h,
+		model_id,
+		value*(random() *0.2 + 0.9) as value
+	FROM
+		data.assets_forecast 
+	WHERE 
+		asset_id = 1
+	ORDER BY 
+		model_id
+) seed;
+
+-- create 2 instances of forecasts to get change
+INSERT INTO data.assets_forecast (
+	asset_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+	SELECT
+		asset_id,
+		'2021-11-13 00:00:00-08'::timestamp with time zone as forecast_made_at,
+		forecast_1h,
+		model_id,
+		value*(random() * 0.1 + 0.8) as value
+	FROM
+		data.assets_forecast;
+
+
+--populate fake previous forecast
 
 INSERT INTO data.sentinels_forecast(
 	sentinel_id,
-	forecast_made_at_utc,
-	forecast_3h_utc,
+	forecast_made_at,
+	forecast_1h,
 	model_id,
 	value
 )
@@ -1030,3 +1281,282 @@ VALUES
 (1,'2021-11-13 12:00','2021-11-20 9:00',8,0.00000),
 (1,'2021-11-13 12:00','2021-11-20 12:00',8,0.00000);
 
+-- populate the foundry ensemble
+INSERT INTO data.sentinels_forecast(
+	sentinel_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+WITH ensemble_rain AS (
+	SELECT
+		1::int as sentinel_id,
+		forecast_made_at,
+		forecast_1h,
+		AVG(value) as ensemble,
+		9::int as model_id
+	FROM
+		data.sentinels_forecast
+	WHERE 
+		model_id in (1,2,3,4,5,6,7)
+	and
+		sentinel_id = 1 
+	GROUP BY 
+		forecast_1h, forecast_made_at
+	ORDER BY 
+		forecast_1h
+	)
+	SELECT
+		ensemble_rain.sentinel_id,
+		ensemble_rain.forecast_made_at,
+		ensemble_rain.forecast_1h,
+		ensemble_rain.model_id,
+		ensemble_rain.ensemble + a.value as rain_plus_snow
+	FROM
+		data.sentinels_forecast a
+	JOIN
+		ensemble_rain
+	USING
+		(forecast_1h, sentinel_id)
+	WHERE
+		a.model_id = 8; -- snow melt
+
+-- populate the sentinels with no data yet
+INSERT INTO data.sentinels_forecast (
+	sentinel_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+WITH no_data_yet AS (
+	SELECT
+		a.sentinel_id
+	FROM
+		data.sentinels a
+	LEFT JOIN
+		(SELECT sentinel_id FROM data.sentinels_forecast GROUP BY sentinel_id) b
+	USING 
+		(sentinel_id)
+	WHERE 
+		b.sentinel_id is null
+)
+SELECT 
+	no_data_yet.sentinel_id,
+	seed.forecast_made_at, 
+	seed.forecast_1h,
+	seed.model_id,
+	seed.value
+FROM 
+	no_data_yet
+CROSS JOIN
+(
+	SELECT
+		forecast_made_at,
+		forecast_1h,
+		model_id,
+		value*(random() *0.2 + 0.9) as value
+	FROM
+		data.sentinels_forecast 
+	WHERE 
+		sentinel_id = 1
+	ORDER BY 
+		model_id
+) seed;
+
+
+INSERT INTO data.sentinels_forecast (
+	sentinel_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+	SELECT
+		sentinel_id,
+		'2021-11-13 00:00:00-08'::timestamp with time zone as forecast_made_at,
+		forecast_1h,
+		model_id,
+		value*(random() * 0.1 + 0.8) as value
+	FROM
+		data.sentinels_forecast;
+
+
+INSERT INTO data.sentinels_historic_storms (
+	sentinel_id,
+	storm_start_date,
+	storm_magnitude,
+	storm_duration
+)
+VALUES
+(116, '2021-11-14',100.4, 1),
+(116, '1971-11-03',95.0, 1),
+(116, '2003-10-16',93.8, 1),
+(116, '1982-01-23',89.7, 1),
+(116, '1979-12-17',89.6, 1),
+(116, '2003-10-16',167.4, 2),
+(116, '2021-11-14',152.8, 2),
+(116, '1982-02-13',150.9, 2),
+(116, '1945-10-24',146.0, 2),
+(116, '1990-11-09',140.6, 2),
+(109, '2021-11-14', 158.0, 1),
+(109, '2003-10-16', 132.4, 1),
+(109, '1951-02-09', 115.8, 1),
+(109, '1984-01-03', 112.8, 1),
+(109, '2008-12-30', 112.2, 1),
+(109, '1951-02-09', 215.6, 2),
+(109, '2021-11-14', 211.0, 2),
+(109, '1909-11-27', 193.1, 2),
+(109, '2008-12-29', 187.2, 2),
+(109, '2003-10-16', 170.6, 2),
+(119, '2003-10-16', 66.4, 1),
+(119, '2018-11-26', 65.8, 1),
+(119, '1995-12-14', 64.3, 1),
+(119, '1972-12-26', 63.5, 1),
+(119, '2021-11-14', 63.2, 1),
+(119, '2003-10-16',  107, 2),
+(119, '1968-01-18',  103.6, 2),
+(119, '1972-12-25',  99.8, 2),
+(119, '2005-01-17',  98.8, 2),
+(119, '2021-11-14',  98.6, 2),
+(123, '2021-11-14', 174.0, 1),
+(123, '1990-11-09', 173.1, 1),
+(123, '1975-12-02', 142.0, 1),
+(123, '1974-01-13', 136.9, 1),
+(123, '1984-01-04', 136.5, 1),
+(123, '1990-11-09', 303.6, 2),
+(123, '2021-11-14', 277.5, 2),
+(123, '1975-12-02', 235.7, 2),
+(123, '1974-01-13', 222.5, 2),
+(123, '1951-02-09', 201.2, 2),
+(68, '2009-09-29', 85.5, 1),
+(68, '1963-10-21', 76.7, 1),
+(68, '2007-12-03', 76.0, 1),
+(68, '1957-02-23', 66.0, 1),
+(68, '1999-01-29', 62.5, 1),
+(68, '2007-12-03', 111, 2),
+(68, '1974-01-13', 109.3, 2),
+(68, '2021-11-14', 91.7, 2),
+(68, '1963-02-03', 88.2, 2),
+(68, '2009-09-29', 88, 2),
+(130, '2021-11-14', 132.8, 1),
+(130, '2003-10-16', 123.2, 1),
+(130, '1986-02-23', 114.0, 1),
+(130, '1990-11-09', 111.6, 1),
+(130, '1968-01-18', 102.1, 1),
+(130, '2021-11-14', 185.2, 2),
+(130, '2003-10-16', 185.2, 2),
+(130, '1990-11-09', 158.8, 2),
+(130, '1968-01-18', 142.5, 2),
+(130, '2009-01-06', 138.2, 2),
+(92, '1991-02-01', 97.3, 1),
+(92, '1963-10-21', 91.7, 1),
+(92, '1975-02-12', 84.6, 1),
+(92, '1955-11-02', 84.1, 1),
+(92, '1995-11-07', 80.2, 1),
+(92, '1955-11-02', 143.5, 2), 
+(92, '1991-02-01', 127.1, 2), 
+(92, '2021-11-14', 125.2, 2), 
+(92, '1963-10-21', 109.5, 2), 
+(92, '1968-12-24', 102.8, 2), 
+(12, '2003-10-16', 136.6, 1),
+(12, '2007-03-11', 117.8, 1),
+(12, '2020-01-31', 111.8, 1),
+(12, '1986-02-23', 100.0, 1),
+(12, '2005-01-17', 98.4, 1),
+(12, '2003-10-16', 210.4, 2),
+(12, '2005-01-17', 169.0, 2),
+(12, '2021-11-14', 162.8, 2),
+(12, '2007-03-11', 153.6, 2),
+(12, '2002-11-19', 148.8, 2),
+(93, '1949-02-16', 65.0, 1),
+(93, '2014-11-25', 48.2, 1),
+(93, '1986-01-18', 47.1, 1),
+(93, '2003-10-20', 42.5, 1),
+(93, '1945-10-24', 42.4, 1),
+(93, '1949-02-16', 69.6, 2),
+(93, '1986-01-18', 57.5, 2),
+(93, '2014-11-25', 54.2, 2),
+(93, '1990-11-24', 54.2, 2),
+(93, '2019-12-20', 53.0, 2),
+(73, '2003-10-16', 120.0, 1),
+(73, '2007-12-02', 85.0, 1),
+(73, '1955-11-02', 82.3, 1),
+(73, '2021-11-14', 80.0, 1),
+(73, '1935-01-21', 73.2, 1),
+(73, '2003-10-16', 161.8, 2),
+(73, '2007-12-02', 124.0, 2),
+(73, '1955-11-02', 118.9, 2),
+(73, '2021-11-14', 113.5, 2),
+(73, '1935-01-21', 112.8, 2),
+(23, '2003-10-16', 117.2, 1),
+(23, '2021-11-14', 114.0, 1),
+(23, '2007-12-02', 101.6, 1),
+(23, '1986-01-18', 95.6, 1),
+(23, '1999-01-28', 91.6, 1),
+(23, '1986-01-17', 174.0, 2),
+(23, '2003-10-16', 160.2, 2),
+(23, '2021-11-14', 157.2, 2),
+(23, '2007-12-02', 150.8, 2),
+(23, '1935-01-21', 132.3, 2),
+(32, '2004-09-19', 91.6, 1),
+(32, '1972-12-26', 89.4, 1),
+(32, '1979-12-17', 87.5, 1),
+(32, '2003-10-16', 85.0, 1),
+(32, '1968-01-18', 68.3, 1),
+(32, '2003-10-16', 140.8, 2),
+(32, '1979-12-17', 103.3, 2),
+(32, '2005-01-18', 100.8, 2),
+(32, '2021-11-14', 100.3, 2),
+(32, '1972-12-26', 98.0, 2),
+(122, '2003-10-16', 136.0, 1),
+(122, '1986-01-18', 92.8, 1),
+(122, '1996-12-30', 81.1, 1),
+(122, '2007-12-02', 80.6, 1),
+(122, '2021-11-14', 78.5, 1),
+(122, '2003-10-16', 168.6, 2),
+(122, '2021-11-14', 127.6, 2),
+(122, '1955-11-02', 122.4, 2),
+(122, '2007-12-02', 115.1, 2),
+(122, '1986-01-17', 107.2, 2);
+
+--randomize population of data for all sentinel ids
+INSERT INTO data.sentinels_historic_storms (
+	sentinel_id, 
+	storm_start_date, 
+	storm_magnitude, 
+	storm_duration, 
+	unit_id
+)
+WITH no_data_yet AS (
+	SELECT
+		a.sentinel_id
+	FROM
+		data.sentinels a
+	LEFT JOIN
+		(SELECT sentinel_id FROM data.sentinels_historic_storms GROUP BY sentinel_id) b
+	USING 
+		(sentinel_id)
+	WHERE 
+		b.sentinel_id IS null
+)
+SELECT 
+	no_data_yet.sentinel_id,
+	seed.storm_start_date, 
+	seed.storm_magnitude*(random() *0.2 + 0.9),
+	storm_duration,
+	1::int as unit_id
+FROM 
+	no_data_yet
+CROSS JOIN
+(
+	SELECT
+		storm_start_date, 
+		storm_magnitude*(random() *0.2 + 0.9) as storm_magnitude,
+		storm_duration
+	FROM
+		data.sentinels_historic_storms 
+	WHERE 
+		sentinel_id = 116 -- randomly chosen
+) seed;
