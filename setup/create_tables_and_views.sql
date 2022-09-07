@@ -174,7 +174,7 @@ CREATE TABLE data.sentinels_forecast
 	forecast_1h timestamp with time zone NOT NULL, --What future datetime the forecast applies to, UTC, every 3 hours summed
 	model_id int NOT NULL references data.models,
 	value double precision NOT NULL,
-	CONSTRAINT sentinels_forecast_unique UNIQUE(sentinel_id, forecast_made_at, forecast_3h, model_id)
+	CONSTRAINT sentinels_forecast_unique UNIQUE(sentinel_id, forecast_made_at, forecast_1h, model_id)
 );
 
 DROP TABLE IF EXISTS data.assets_forecast;
@@ -185,7 +185,7 @@ CREATE TABLE data.assets_forecast
 	forecast_1h timestamp with time zone NOT NULL, --What future datetime the forecast applies to, UTC, every 3 hours summed
 	model_id int NOT NULL references data.models,
 	value double precision NOT NULL,
-	CONSTRAINT assets_forecast_unique UNIQUE(asset_id, forecast_made_at, forecast_3h, model_id)
+	CONSTRAINT assets_forecast_unique UNIQUE(asset_id, forecast_made_at, forecast_1h, model_id)
 );
 
 DROP TABLE IF EXISTS data.assets_antecedant;
