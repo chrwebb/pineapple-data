@@ -13,39 +13,13 @@ mkdir utils
 rm -f utils/db.ini
 printf "[pg_connection]\nhost=$PGHOST\ndbname=$PGDATABASE\nuser=$PGUSER\nport=$PGPORT\npassword=$PGPASSWORD" > utils/db.ini
 
-wget https://pub.data.gov.bc.ca/datasets/cdfc2d7b-c046-4bf0-90ac-4897232619e1/prot_current_fire_polys.zip
-wget https://www.for.gov.bc.ca/ftp/HPR/external/\!publish/Maps_and_Data/GoogleEarth/WMB_Fires/BC%20Fire%20Perimeters%202017-2019.kmz
-wget https://www.for.gov.bc.ca/ftp/HPR/external/\!publish/Maps_and_Data/GoogleEarth/WMB_Fires/BC_Fire_Points_and_Perimeters_2019_2021.kmz
+bcdata bc2pg fire-perimeters-historical --db_url postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE --table fire_historical --schema staging
+bcdata bc2pg fire-perimeters-current --db_url postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE --table fire_current --schema staging
+ogr2ogr -overwrite -a_srs EPSG:4326 -lco GEOMETRY_NAME=geom4326 -f PostgreSQL PG:"host=$PGHOST dbname=$PGDATABASE user=$PGUSER port=$PGPORT password=$PGPASSWORD" PG:"host=$PGHOST dbname=$PGDATABASE user=$PGUSER port=$PGPORT password=$PGPASSWORD" -sql "(SELECT fire_year, ST_Transform(geom,4326) as geom4326 FROM staging.fire_historical WHERE fire_year>DATE_PART('year', CURRENT_DATE)-5) UNION ALL (SELECT fire_year, ST_Transform(geom,4326) as geom4326 FROM staging.fire_current)" -nln data.fire_polygons
 
-unzip -qun prot_current_fire_polys.zip -d data/test/
-rm prot_current_fire_polys.zip
-ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/prot_current_fire_polys.shp -dialect sqlite -nln data.fire_polygons -sql "select fire_year, (ST_Dump(Geometry)).geom as geom4326 from prot_current_fire_polys"
-rm data/test/prot_current_fire_polys.*
-
-unzip -qun 'BC Fire Perimeters 2017-2019.kmz' -d data/test/
-rm 'BC Fire Perimeters 2017-2019.kmz'
-ogr2ogr -f GeoJSON data/test/fire_2017.geojson data/test/doc.kml 'BC Fire Perimeter 2017'
-ogr2ogr -f GeoJSON data/test/fire_2018.geojson data/test/doc.kml 'BC Fire Perimeter 2018'
-ogr2ogr -f GeoJSON data/test/fire_2019.geojson data/test/doc.kml 'BC Fire Perimeter 2019'
-rm data/test/doc.kml
-
-unzip -qun BC_Fire_Points_and_Perimeters_2019_2021.kmz -d data/test/
-rm BC_Fire_Points_and_Perimeters_2019_2021.kmz
-ogr2ogr -f GeoJSON data/test/fire_2020.geojson data/test/doc.kml 'BC Fire Perimeter 2020'
-ogr2ogr -f GeoJSON data/test/fire_2021.geojson data/test/doc.kml 'BC Fire Perimeter 2021'
-rm data/test/doc.kml
-
-ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fire_2017.geojson -append -dialect sqlite -nln data.fire_polygons -sql "select 2017 as fire_year, Geometry as geom4326 from 'BC Fire Perimeter 2017'"
-ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fire_2018.geojson -append -dialect sqlite -nln data.fire_polygons -sql "select 2018 as fire_year, Geometry as geom4326 from 'BC Fire Perimeter 2018'"
-ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fire_2019.geojson -append -dialect sqlite -nln data.fire_polygons -sql "select 2019 as fire_year, Geometry as geom4326 from 'BC Fire Perimeter 2019'"
-ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fire_2020.geojson -append -dialect sqlite -nln data.fire_polygons -sql "select 2020 as fire_year, Geometry as geom4326 from 'BC Fire Perimeter 2020'"
-ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fire_2021.geojson -append -dialect sqlite -nln data.fire_polygons -sql "select 2021 as fire_year, Geometry as geom4326 from 'BC Fire Perimeter 2021'"
-
-rm data/test/fire_*
-
-# unzip -qun data/test/roads_4326.zip -d data/test/
-# ogr2ogr -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/roads_4326.geojson -dialect sqlite -nln data.road_lines -sql "select Geometry as geom4326 from roads_4326"
-# rm data/test/roads_4326.geojson
+bcdata bc2pg forest-tenure-road-section-lines --db_url postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE --table forest_roads --schema staging
+bcdata bc2pg digital-road-atlas-dra-master-partially-attributed-roads --db_url postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE --table road_atlas --schema staging
+ogr2ogr -overwrite -a_srs EPSG:4326 -lco GEOMETRY_NAME=geom4326 -f PostgreSQL PG:"host=$PGHOST dbname=$PGDATABASE user=$PGUSER port=$PGPORT password=$PGPASSWORD" PG:"host=$PGHOST dbname=$PGDATABASE user=$PGUSER port=$PGPORT password=$PGPASSWORD" -sql "(SELECT (ST_Dump(ST_Transform(geom,4326))).geom as geom4326 FROM staging.forest_roads) UNION ALL (SELECT (ST_Dump(ST_Transform(geom,4326))).geom as geom4326 FROM staging.road_atlas)" -nln data.road_lines
 
 psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/create_functions_and_triggers.sql
 psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/populate_tables.sql

@@ -14,6 +14,7 @@ The main functions are:
 	- Python 3.8
 	- GDAL >= 2.2.3
 	- unzip
+	- bcdata Python Library
 
 ```sh
 sudo apt install make
@@ -22,6 +23,10 @@ sudo apt-get install gdal-bin
 sudo apt install postgresql-client-12
 sudo apt install postgis
 sudo apt-get install p7zip-full
+```
+
+```sh
+pip install bcdata
 ```
 
 

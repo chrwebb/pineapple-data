@@ -48,10 +48,7 @@ CREATE TABLE data.climate_normals_1991_2020 (
 );
 
 DROP TABLE IF EXISTS data.fire_polygons;
-CREATE TABLE data.fires (
-	fire_year smallint  NOT NULL,
-	geom4326 geometry(MultiPolygon,4326)  NOT NULL
-);
+DROP TABLE IF EXISTS data.road_lines;
 
 DROP TABLE IF EXISTS data.pf_grids_aep_rollup CASCADE;
 CREATE TABLE data.pf_grids_aep_rollup
