@@ -107,7 +107,7 @@ CREATE TABLE data.sentinels
 	network_id integer references data.networks, -- TBD: Relate to a network table
 	start_year smallint, -- Relates to precip
 	end_year smallint, -- Relates to precip
-	time_zone varchar(50)
+	time_zone varchar(50) NOT NULL
 );
 
 
@@ -151,7 +151,7 @@ CREATE TABLE data.assets
 	fire_past_2_years_m2 double precision NOT NULL , --contributes to land_disturbance_road when combined with aoi_area_m2
 	fire_past_5_years_m2 double precision NOT NULL , --contributes to land_disturbance_fire when combined with aoi_area_m2
 	length_of_roads_m double precision NOT NULL,  --contributes to land_disturbance_road when combined with aoi_area_m2
-	time_zone varchar(50),
+	time_zone varchar(50) NOT NULL,
 	created timestamp with time zone NOT NULL default now()
 );
 

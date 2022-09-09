@@ -13,6 +13,31 @@ CREATE OR REPLACE FUNCTION data.fn_geo_update_event() RETURNS trigger AS
 LANGUAGE plpgsql VOLATILE
 COST 100;
 
+CREATE OR REPLACE FUNCTION data.assets_insert_timezone() RETURNS trigger AS
+  $BODY$
+  BEGIN
+  NEW.time_zone = tzid FROM data.timezone WHERE ST_Intersects(NEW.geom4326,geom4326);
+  RAISE NOTICE 'UPDATING timezone for asset_id: %, asset_name:%,[%,%]', NEW.asset_id, NEW.asset_name, NEW.latitude, NEW.longitude;
+    RETURN NEW;
+  END;
+  $BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+
+
+CREATE OR REPLACE FUNCTION data.sentinels_insert_timezone() RETURNS trigger AS
+  $BODY$
+  BEGIN
+  NEW.time_zone = tzid FROM data.timezone WHERE ST_Intersects(NEW.geom4326,geom4326);
+  RAISE NOTICE 'UPDATING timezone for sentinel_id: %, station_id: %, station_name: %,[%,%]', NEW.sentinel_id, NEW.station_id, NEW.station_name, NEW.latitude, NEW.longitude;
+    RETURN NEW;
+  END;
+  $BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+
+
+
 CREATE OR REPLACE FUNCTION data.fn_fire_road_update_event() RETURNS trigger AS 
   $BODY$  
   BEGIN
@@ -204,6 +229,42 @@ AS $BODY$
   END
 $BODY$;
 
+-- stored procedure for get_asset_antecedent_rain()
+CREATE OR REPLACE FUNCTION data.get_asset_antecedent_rain(
+  in_asset_id integer,
+  OUT antecedant_data json
+)
+  RETURNS SETOF json
+  LANGUAGE 'plpgsql'
+
+  COST 100
+  VOLATILE
+  ROWS 1
+AS $BODY$
+  BEGIN 
+      RETURN QUERY
+      SELECT 
+      row_to_json(b)
+    FROM(
+       SELECT
+          a.seven_day,
+          a.thirty_day,
+          a.seven_day_pct_normal,
+          a.thirty_day_pct_normal
+        FROM
+          data.assets_antecedant a
+        WHERE
+          asset_id = in_asset_id
+        ORDER BY 
+          created DESC
+        LIMIT 1
+        )b;
+  END
+  $BODY$;
+
+  ALTER FUNCTION data.get_asset_antecedent_rain(integer) OWNER TO foundry;
+  GRANT EXECUTE ON FUNCTION data.get_asset_antecedent_rain(integer) TO foundry;
+
 
 -- triggers
 -- INSERT geo trigger
@@ -229,3 +290,17 @@ CREATE TRIGGER asset_table_insert_fire_road
   BEFORE INSERT ON data.assets
   FOR EACH ROW
   EXECUTE PROCEDURE data.fn_fire_road_update_event();
+
+--INSERT timezone use trigger for assets table 
+DROP TRIGGER IF EXISTS asset_table_insert_timezone ON data.assets;
+CREATE TRIGGER asset_table_insert_timezone
+  BEFORE INSERT ON data.assets
+  FOR EACH ROW
+  EXECUTE PROCEDURE data.assets_insert_timezone();
+
+--INSERT timezone use trigger for sentinels table 
+DROP TRIGGER IF EXISTS sentinel_table_insert_timezone ON data.seninels;
+CREATE TRIGGER asset_table_insert_timezone
+  BEFORE INSERT ON data.sentinels
+  FOR EACH ROW
+  EXECUTE PROCEDURE data.sentinels_insert_timezone();
