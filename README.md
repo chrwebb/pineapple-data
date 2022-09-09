@@ -46,3 +46,11 @@ git clone git@github.com:FoundrySpatial/flood-project.git
 cd flood-project
 ./setup.sh
 ```
+
+4. Choose a data setup bash file depending on if full data is desired or not
+```sh
+./setup_full_data.sh
+```
+```sh
+./setup_seed_data.sh
+```
