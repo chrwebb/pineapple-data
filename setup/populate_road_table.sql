@@ -1,4 +1,4 @@
-TRUNCATE data.road_lines;
+TRUNCATE data.road_lines RESTART IDENTITY;
 INSERT INTO data.road_lines (geom4326) SELECT geom4326 FROM
 (
 	(

@@ -1,4 +1,4 @@
-TRUNCATE data.fire_polygons;
+TRUNCATE data.fire_polygons RESTART IDENTITY;
 INSERT INTO data.fire_polygons (fire_year, geom4326) SELECT fire_year, geom4326 FROM
 (
 	(
