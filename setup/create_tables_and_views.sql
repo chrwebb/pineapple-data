@@ -21,14 +21,6 @@ CREATE TABLE data.models (
 );
 
 
-DROP TABLE IF EXISTS data.risk_levels CASCADE;
-CREATE TABLE data.risk_levels (
-	risk_level INTEGER NOT NULL,
-	lower_bound double precision,
-	upper_bound double precision,
-	risk_label text  NOT NULL
-);
-
 DROP TABLE IF EXISTS data.networks CASCADE;
 CREATE TABLE data.networks
 (
