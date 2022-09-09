@@ -47,8 +47,6 @@ CREATE TABLE data.climate_normals_1991_2020 (
 	CONSTRAINT climate_normals_1991_2020_unique UNIQUE (watershed_feature_id, month)
 );
 
-DROP TABLE IF EXISTS data.fire_polygons;
-DROP TABLE IF EXISTS data.road_lines;
 
 DROP TABLE IF EXISTS data.pf_grids_aep_rollup CASCADE;
 CREATE TABLE data.pf_grids_aep_rollup
@@ -195,4 +193,17 @@ CREATE TABLE data.assets_antecedant
 	imported_at timestamp with time zone NOT NULL,
 	created timestamp with time zone NOT NULL default now(),
 	CONSTRAINT assets_antecedant_unique UNIQUE(asset_id, unit_id)
+);
+
+DROP TABLE IF EXISTS data.fire_polygons;
+CREATE TABLE data.fire_polygons
+(
+	fire_year SMALLINT NOT NULL,
+	geom4326 GEOMETRY(MultiPolygon, 4326)
+);
+
+DROP TABLE IF EXISTS data.road_lines;
+CREATE TABLE data.road_lines
+(
+	geom4326 GEOMETRY(LineString, 4326)
 );
