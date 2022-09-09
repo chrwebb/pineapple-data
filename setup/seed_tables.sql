@@ -1,8 +1,8 @@
-TRUNCATE data.road_lines;
-INSERT INTO data.road_lines SELECT (ST_Dump(geom4326)).geom FROM staging.road_lines;
+TRUNCATE data.road_lines RESTART IDENTITY;
+INSERT INTO data.road_lines (geom4326) SELECT (ST_Dump(geom4326)).geom FROM staging.road_lines;
 
-TRUNCATE data.fire_polygons;
-INSERT INTO data.fire_polygons SELECT fire_year, ST_Multi(geom4326) FROM staging.fire_polygons;
+TRUNCATE data.fire_polygons RESTART IDENTITY;
+INSERT INTO data.fire_polygons (fire_year, geom4326) SELECT fire_year, ST_Multi(geom4326) FROM staging.fire_polygons;
 
 INSERT INTO data.users (auth0_id, user_name) VALUES
 ('EAC742825A9C864A1FD3C43AF32DC', 'BC Ministry of Transportation and Infrastructure'), -- 1
