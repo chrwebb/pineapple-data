@@ -130,3 +130,5 @@ dmypy.json
 
 # flood-project specific
 *.ini
+
+utils/db.ini

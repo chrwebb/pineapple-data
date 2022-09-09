@@ -1,3 +1,9 @@
+TRUNCATE data.road_lines RESTART IDENTITY;
+INSERT INTO data.road_lines (geom4326) SELECT (ST_Dump(geom4326)).geom FROM staging.road_lines;
+
+TRUNCATE data.fire_polygons RESTART IDENTITY;
+INSERT INTO data.fire_polygons (fire_year, geom4326) SELECT fire_year, ST_Multi(geom4326) FROM staging.fire_polygons;
+
 INSERT INTO data.users (auth0_id, user_name) VALUES
 ('EAC742825A9C864A1FD3C43AF32DC', 'BC Ministry of Transportation and Infrastructure'), -- 1
 ('B46ABDABF476EFF1D81AC47D52524', 'City of Merritt'),                                  -- 2
@@ -214,7 +220,7 @@ INSERT INTO data.assets (
 ('kwinshatin cr culv', 'culvert', 1, 50.018529, -120.821957, ST_point(-120.821957,50.018529,4326), 8927602, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)), 0, 0, 1000, 2000, 300), -- BC MOTI asset
 ('Godey Creek culv', 'culvert', 1, 50.085495, -120.751576, ST_point(-120.751576,50.085495,4326), 8925604, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)), 0, 0, 1500, 1200, 500), -- BC MOTI asset
 ('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)), 2, 0, 171180, 160282, 1500), -- City of Merritt asset
-('James Plant', 'wastewater treatment plant', 3, 49.10981 , -122.322585,ST_point(-122.322585, 49.10981 ,4326), 9981920, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-122.322585, 49.10981 ,4326),3005),5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-122.322585, 49.10981 ,4326),3005),5000)), 0, 0, 0, 0, 10000), -- City of Abbotsford asset
+('James Plant', 'wastewater treatment plant', 3, 49.110502, -122.322585,ST_point(-122.322585, 49.110502,4326), 9981920, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)), 0, 0, 0, 0, 10000), -- City of Abbotsford asset
 ('Existing pipeline facilities','segment 5 Kingsvale to Merritt', 4, 50.0167, -120.8508, ST_point(-120.8508,50.0167,4326), 9184965, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)), 2, 0, 701819,601718, 500) -- Tranmountain asset
 ;
 
@@ -346,8 +352,7 @@ INSERT INTO data.pf_grids_aep_rollup (
 (7948635,30.136,60.2719,68.2122,78.6722,86.6433,94.6986,105.502,37.6893,75.3786,85.1484,97.9124,107.561,117.246,130.132),
 (8925604,22.1822,44.3645,50.1519,57.7537,63.5292,69.3521,77.1364,26.5369,53.0738,59.8725,68.7224,75.3861,82.0525,90.8871),
 (8927602,24.3403,48.6806,54.9034,63.0626,69.2506,75.478,83.788,29.552,59.1041,66.5163,76.1384,83.369,90.584,100.125),
-(9981920,26.4338,53,60,70,77,84,94,34,68,76,88,97,105,117),
-(10644179,26.4338,53,60,70,77,84,94,34,68,76,88,97,105,117);
+(9981920,26.4338,53,60,70,77,84,94,34,68,76,88,97,105,117);
 
 -- if any new assets are added, ensure they get randomized data
 INSERT INTO data.pf_grids_aep_rollup (
@@ -480,7 +485,7 @@ CROSS JOIN
 INSERT INTO data.assets_forecast(
 	asset_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
@@ -1516,7 +1521,7 @@ VALUES
 INSERT INTO data.assets_forecast(
 	asset_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
@@ -1524,7 +1529,7 @@ WITH ensemble_rain AS (
 	SELECT
 		1::int as asset_id,
 		forecast_made_at,
-		forecast_1h,
+		forecast_3h,
 		AVG(value) as ensemble,
 		9::int as model_id
 	FROM
@@ -1534,14 +1539,14 @@ WITH ensemble_rain AS (
 	and
 		asset_id = 1 
 	GROUP BY 
-		forecast_1h, forecast_made_at
+		forecast_3h, forecast_made_at
 	ORDER BY 
-		forecast_1h
+		forecast_3h
 	)
 	SELECT
 		ensemble_rain.asset_id,
 		ensemble_rain.forecast_made_at,
-		ensemble_rain.forecast_1h,
+		ensemble_rain.forecast_3h,
 		ensemble_rain.model_id,
 		ensemble_rain.ensemble + a.value as rain_plus_snow
 	FROM
@@ -1549,7 +1554,7 @@ WITH ensemble_rain AS (
 	JOIN
 		ensemble_rain
 	USING
-		(forecast_1h, asset_id)
+		(forecast_3h, asset_id)
 	WHERE
 		a.model_id = 8; -- snow melt
 
@@ -1557,7 +1562,7 @@ WITH ensemble_rain AS (
 INSERT INTO data.assets_forecast (
 	asset_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
@@ -1576,7 +1581,7 @@ WITH no_data_yet AS (
 SELECT 
 	no_data_yet.asset_id,
 	seed.forecast_made_at, 
-	seed.forecast_1h,
+	seed.forecast_3h,
 	seed.model_id,
 	seed.value
 FROM 
@@ -1585,7 +1590,7 @@ CROSS JOIN
 (
 	SELECT
 		forecast_made_at,
-		forecast_1h,
+		forecast_3h,
 		model_id,
 		value*(random() *0.2 + 0.9) as value
 	FROM
@@ -1600,14 +1605,14 @@ CROSS JOIN
 INSERT INTO data.assets_forecast (
 	asset_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
 	SELECT
 		asset_id,
 		'2021-11-13 00:00:00-08'::timestamp with time zone as forecast_made_at,
-		forecast_1h,
+		forecast_3h,
 		model_id,
 		value*(random() * 0.1 + 0.8) as value
 	FROM
@@ -1619,7 +1624,7 @@ INSERT INTO data.assets_forecast (
 INSERT INTO data.sentinels_forecast(
 	sentinel_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
@@ -2655,7 +2660,7 @@ VALUES
 INSERT INTO data.sentinels_forecast(
 	sentinel_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
@@ -2663,7 +2668,7 @@ WITH ensemble_rain AS (
 	SELECT
 		1::int as sentinel_id,
 		forecast_made_at,
-		forecast_1h,
+		forecast_3h,
 		AVG(value) as ensemble,
 		9::int as model_id
 	FROM
@@ -2673,14 +2678,14 @@ WITH ensemble_rain AS (
 	and
 		sentinel_id = 1 
 	GROUP BY 
-		forecast_1h, forecast_made_at
+		forecast_3h, forecast_made_at
 	ORDER BY 
-		forecast_1h
+		forecast_3h
 	)
 	SELECT
 		ensemble_rain.sentinel_id,
 		ensemble_rain.forecast_made_at,
-		ensemble_rain.forecast_1h,
+		ensemble_rain.forecast_3h,
 		ensemble_rain.model_id,
 		ensemble_rain.ensemble + a.value as rain_plus_snow
 	FROM
@@ -2688,7 +2693,7 @@ WITH ensemble_rain AS (
 	JOIN
 		ensemble_rain
 	USING
-		(forecast_1h, sentinel_id)
+		(forecast_3h, sentinel_id)
 	WHERE
 		a.model_id = 8; -- snow melt
 
@@ -2696,7 +2701,7 @@ WITH ensemble_rain AS (
 INSERT INTO data.sentinels_forecast (
 	sentinel_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
@@ -2715,7 +2720,7 @@ WITH no_data_yet AS (
 SELECT 
 	no_data_yet.sentinel_id,
 	seed.forecast_made_at, 
-	seed.forecast_1h,
+	seed.forecast_3h,
 	seed.model_id,
 	seed.value
 FROM 
@@ -2724,7 +2729,7 @@ CROSS JOIN
 (
 	SELECT
 		forecast_made_at,
-		forecast_1h,
+		forecast_3h,
 		model_id,
 		value*(random() *0.2 + 0.9) as value
 	FROM
@@ -2739,14 +2744,14 @@ CROSS JOIN
 INSERT INTO data.sentinels_forecast (
 	sentinel_id,
 	forecast_made_at,
-	forecast_1h,
+	forecast_3h,
 	model_id,
 	value
 )
 	SELECT
 		sentinel_id,
 		'2021-11-13 00:00:00-08'::timestamp with time zone as forecast_made_at,
-		forecast_1h,
+		forecast_3h,
 		model_id,
 		value*(random() * 0.1 + 0.8) as value
 	FROM

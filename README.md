@@ -14,6 +14,7 @@ The main functions are:
 	- Python 3.8
 	- GDAL >= 2.2.3
 	- unzip
+	- bcdata Python Library
 
 ```sh
 sudo apt install make
@@ -22,6 +23,10 @@ sudo apt-get install gdal-bin
 sudo apt install postgresql-client-12
 sudo apt install postgis
 sudo apt-get install p7zip-full
+```
+
+```sh
+pip install bcdata
 ```
 
 
@@ -40,4 +45,12 @@ export PGPASSWORD=password
 git clone git@github.com:FoundrySpatial/flood-project.git
 cd flood-project
 ./setup.sh
+```
+
+4. Choose a data setup bash file depending on if full data is desired or not
+```sh
+./setup_full_data.sh
+```
+```sh
+./setup_seed_data.sh
 ```
