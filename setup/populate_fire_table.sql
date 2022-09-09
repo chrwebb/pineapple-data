@@ -1,5 +1,5 @@
 TRUNCATE data.fire_polygons;
-INSERT INTO data.fire_polygons SELECT fire_year, geom4326 FROM
+INSERT INTO data.fire_polygons (fire_year, geom4326) SELECT fire_year, geom4326 FROM
 (
 	(
 		SELECT 

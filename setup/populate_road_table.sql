@@ -1,5 +1,5 @@
 TRUNCATE data.road_lines;
-INSERT INTO data.road_lines SELECT geom4326 FROM
+INSERT INTO data.road_lines (geom4326) SELECT geom4326 FROM
 (
 	(
 		SELECT 
