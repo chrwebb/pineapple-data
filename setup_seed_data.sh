@@ -8,4 +8,4 @@ unzip -qun data/test/roads_4326.zip -d data/test/
 ogr2ogr -overwrite -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/roads_4326.geojson -dialect sqlite -nln staging.road_lines -sql "select Geometry as geom4326 from roads_4326"
 rm data/test/roads_4326.geojson
 
-psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/seed_tables.sql
+psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/sql/seed_tables.sql
