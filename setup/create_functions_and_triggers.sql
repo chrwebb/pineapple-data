@@ -90,6 +90,70 @@ AS $BODY$
   END
 $BODY$;
 
+
+
+CREATE OR REPLACE FUNCTION data.previous_forecast_made_at 
+(
+  in_asset_id integer,
+  OUT previous_forecast_made_at timestamp with time zone
+)
+  RETURNS SETOF timestamp with time zone
+  LANGUAGE 'plpgsql'
+
+  COST 100
+  VOLATILE
+  ROWS 1
+AS $BODY$
+  BEGIN 
+      RETURN QUERY
+      SELECT 
+        forecast_made_at - INTERVAL '12 hour' as previous_forecast_made_at 
+      FROM
+        data.assets_forecast
+      WHERE 
+      asset_id = in_asset_id
+    ORDER BY 
+        forecast_made_at DESC
+    LIMIT 1;
+  END
+  $BODY$;
+
+  ALTER FUNCTION data.previous_forecast_made_at(integer) OWNER TO foundry;
+  GRANT EXECUTE ON FUNCTION data.previous_forecast_made_at(integer) TO foundry;
+
+--stored_procedure_for_current_forecast
+
+CREATE OR REPLACE FUNCTION data.current_forecast_made_at 
+(
+  in_asset_id integer,
+  OUT previous_forecast_made_at timestamp with time zone 
+)
+  RETURNS SETOF timestamp with time zone
+  LANGUAGE 'plpgsql'
+
+  COST 100
+  VOLATILE
+  ROWS 1
+AS $BODY$
+  BEGIN 
+      RETURN QUERY
+      SELECT 
+        forecast_made_at as current_forecast_made_at 
+      FROM
+        data.assets_forecast
+      WHERE 
+      asset_id = in_asset_id
+    ORDER BY 
+        forecast_made_at DESC
+    LIMIT 1;
+  END
+  $BODY$;
+
+  ALTER FUNCTION data.current_forecast_made_at(integer) OWNER TO foundry;
+  GRANT EXECUTE ON FUNCTION data.current_forecast_made_at(integer) TO foundry;
+
+-- stored procedure for asset forecast dates
+
 CREATE OR REPLACE FUNCTION data.get_asset_forecast_dates
   (in_asset_id integer, 
   OUT forecast_date json)
@@ -111,6 +175,68 @@ AS $BODY$
     LIMIT 1;
   END
 $BODY$;
+
+-- stored procedure for current forecast plus previous 12 hours 
+
+CREATE OR REPLACE FUNCTION data.get_current_plus_previous_12hours_forecast
+(
+  in_asset_id integer,
+  OUT asset_id integer,
+  OUT forecast_made_at timestamp with time zone,
+  OUT forecast_1h timestamp with time zone,
+  OUT model_id integer,
+  OUT value double precision
+)
+  RETURNS SETOF RECORD
+  LANGUAGE 'plpgsql'
+  COST 100
+  VOLATILE
+  ROWS 10000
+AS $BODY$
+    BEGIN
+      RETURN QUERY
+      WITH constants (asset_id, current_forecast_made_at, previous_forecast_made_at) as (
+          VALUES (1, (SELECT data.current_forecast_made_at(1)), (SELECT data.previous_forecast_made_at(1)))
+          )
+          SELECT
+            a.*
+          FROM
+            constants
+          JOIN
+            data.assets_forecast a
+          on
+            a.forecast_made_at = constants.previous_forecast_made_at - INTERVAL '12 hour'
+          WHERE
+            a.forecast_1h < (SELECT data.previous_forecast_made_at(1))
+          UNION
+          SELECT
+            a.*
+          FROM
+            constants
+          JOIN
+            data.assets_forecast a
+          on
+            a.forecast_made_at = constants.previous_forecast_made_at
+          WHERE
+            a.forecast_1h < (SELECT data.current_forecast_made_at(1))
+          UNION 
+          SELECT
+            a.*
+          FROM
+            constants
+          JOIN
+            data.assets_forecast a
+          on
+            a.forecast_made_at = constants.current_forecast_made_at
+          ORDER BY 
+            asset_id,model_id,forecast_1h;
+    END
+    $BODY$;
+
+  ALTER FUNCTION data.get_current_plus_previous_12hours_forecast(integer) OWNER TO foundry;
+  GRANT EXECUTE ON FUNCTION data.get_current_plus_previous_12hours_forecast(integer) TO foundry;
+
+
 
 CREATE OR REPLACE FUNCTION data.get_sentinel_info
   (in_sentinel_id integer, 
