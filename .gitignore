@@ -131,9 +131,7 @@ dmypy.json
 # flood-project specific
 *.ini
 
-<<<<<<< HEAD
 utils/db.ini
-=======
 # Terraform
 
 # Local .terraform directories
@@ -170,4 +168,3 @@ override.tf.json
 # Ignore CLI configuration files
 .terraformrc
 terraform.rc
->>>>>>> 11412f1 (add tf scripts and gh workflow for db provisioning)

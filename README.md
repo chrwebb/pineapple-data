@@ -48,7 +48,6 @@ cd flood-project
 ./setup.sh
 ```
 
-<<<<<<< HEAD
 4. Choose a data setup bash file depending on if full data is desired or not
 ```sh
 ./setup_full_data.sh
@@ -56,7 +55,6 @@ cd flood-project
 ```sh
 ./setup_seed_data.sh
 ```
-=======
 ## Azure Provisioning
 
 See the [terraform](./terraform) directory for details. 
@@ -82,4 +80,3 @@ It is preferrable to use the github action to avoid having to update firewall ru
 2. From the same page, go to `Connection strings` on the left side menu and copy the psql string, updating the dbname and password.
 3. Run that command in your terminal to connect
 4. Once finished, go back to connection security and remove your IP address from the firewall rules.
->>>>>>> 11412f1 (add tf scripts and gh workflow for db provisioning)
