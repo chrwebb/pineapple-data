@@ -50,9 +50,6 @@ AS $BODY$
   END
   $BODY$;
 
-  ALTER FUNCTION data.asset_previous_forecast_made_at(integer) OWNER TO foundry;
-  GRANT EXECUTE ON FUNCTION data.asset_previous_forecast_made_at(integer) TO foundry;
-
 CREATE OR REPLACE FUNCTION data.sentinel_previous_forecast_made_at 
 (
   in_sentinel_id integer,
@@ -78,9 +75,6 @@ AS $BODY$
 	LIMIT 1;
   END
   $BODY$;
-
-  ALTER FUNCTION data.sentinel_previous_forecast_made_at(integer) OWNER TO foundry;
-  GRANT EXECUTE ON FUNCTION data.sentinel_previous_forecast_made_at(integer) TO foundry;
 
 --stored_procedure_for_current_forecast
 
@@ -110,9 +104,6 @@ AS $BODY$
   END
   $BODY$;
 
-  ALTER FUNCTION data.asset_current_forecast_made_at(integer) OWNER TO foundry;
-  GRANT EXECUTE ON FUNCTION data.asset_current_forecast_made_at(integer) TO foundry;
-
 
 CREATE OR REPLACE FUNCTION data.sentinel_current_forecast_made_at 
 (
@@ -139,10 +130,6 @@ AS $BODY$
 	LIMIT 1;
   END
   $BODY$;
-
-  ALTER FUNCTION data.sentinel_current_forecast_made_at(integer) OWNER TO foundry;
-  GRANT EXECUTE ON FUNCTION data.sentinel_current_forecast_made_at(integer) TO foundry;
-
 -- stored procedure for current forecast plus previous 12 hours 
 
 CREATE OR REPLACE FUNCTION data.get_asset_current_plus_previous_24hours_forecast
@@ -439,6 +426,3 @@ AS $BODY$
 		)b;
   END
   $BODY$;
-
-  ALTER FUNCTION data.get_asset_antecedent_rain(integer) OWNER TO foundry;
-  GRANT EXECUTE ON FUNCTION data.get_asset_antecedent_rain(integer) TO foundry;
