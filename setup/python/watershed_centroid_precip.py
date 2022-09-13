@@ -4,27 +4,39 @@ import pdb
 import psycopg2
 import psycopg2.extras
 import rioxarray
+import os
 
-vrt = gdal.BuildVRT("/data/PPT.vrt",
+dbname=os.environ.get("PGDATABASE")
+user=os.environ.get("PGUSER")
+host=os.environ.get("PGHOST")
+password=os.environ.get("PGPASSWORD")
+port=os.environ.get("PGPORT")
+
+db_conn = psycopg2.connect("dbname='%s' user='%s' host='%s' password='%s' port='%s'" % (dbname, user, host, password, port))
+
+iter_cur = db_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+cur = db_conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+
+vrt = gdal.BuildVRT("./data/PPT.vrt",
 	[
-		"/data/PPT01.tif",
-		"/data/PPT02.tif",
-		"/data/PPT03.tif",
-		"/data/PPT04.tif",
-		"/data/PPT05.tif",
-		"/data/PPT06.tif",
-		"/data/PPT07.tif",
-		"/data/PPT08.tif",
-		"/data/PPT09.tif",
-		"/data/PPT10.tif",
-		"/data/PPT11.tif",
-		"/data/PPT12.tif",		
+		"./data/PPT01.tif",
+		"./data/PPT02.tif",
+		"./data/PPT03.tif",
+		"./data/PPT04.tif",
+		"./data/PPT05.tif",
+		"./data/PPT06.tif",
+		"./data/PPT07.tif",
+		"./data/PPT08.tif",
+		"./data/PPT09.tif",
+		"./data/PPT10.tif",
+		"./data/PPT11.tif",
+		"./data/PPT12.tif",		
 	]
 )
 
 vrt = None
 
-vrt = rioxarray.open_rasterio("/data/PPT.vrt")
+vrt = rioxarray.open_rasterio("./data/PPT.vrt")
 
 insert_query = """
 	INSERT INTO data.climate_normals_1991_2020 (
@@ -32,7 +44,12 @@ insert_query = """
 		month,
 		unit_id,
 		value
-	) VALUES ()
+	) VALUES (
+		{watershed_feature_id},
+		{month},
+		{unit_id},
+		{value}
+	)
 """
 
 centroid_query = """
@@ -41,7 +58,7 @@ centroid_query = """
 		ST_X(ST_transform(centroid,4326)) as lon,
 		ST_Y(ST_transform(centroid,4326)) as lat
 	FROM
-		fwa.fwa_watersheds_poly
+		data.freshwater_atlas;
 """
 
 iter_cur.execute(centroid_query)
