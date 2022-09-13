@@ -3,7 +3,7 @@ resource "azurerm_postgresql_server" "psql_server" {
   location            = azurerm_resource_group.db_rg.location
   resource_group_name = azurerm_resource_group.db_rg.name
 
-  sku_name = "GP_Gen5_2"
+  sku_name = "B_Gen5_2"
 
   storage_mb                   = var.db_storage_mb
   backup_retention_days        = 7
