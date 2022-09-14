@@ -314,7 +314,7 @@ AS $BODY$
 		'station_name', sentinel.station_name,
 		'station_id', sentinel.station_id,
 		'start_date', storm.storm_start_date,
-		'end_date', storm.storm_date + storm.storm_duration * INTERVAL '1 day',
+		'end_date', storm.storm_start_date + storm.storm_duration * INTERVAL '1 day',
 		'magnitude', storm.storm_magnitude
 	  )
 	FROM
