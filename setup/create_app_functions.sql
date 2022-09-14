@@ -1,140 +1,141 @@
 CREATE OR REPLACE FUNCTION data.get_fire_years
-  (OUT fire_years_data json)
+	(OUT fire_years_data json)
 	RETURNS SETOF json 
 	LANGUAGE 'plpgsql'
 	COST 100
 	VOLATILE PARALLEL UNSAFE
 	ROWS 1000
 AS $BODY$
-  BEGIN
-	  RETURN QUERY
-	  SELECT
-	  JSON_AGG(b)
-	  FROM
-	  (
+	BEGIN
+		RETURN QUERY
 		SELECT
-	  DISTINCT fire_year
+		JSON_AGG(b)
+		FROM
+		(
+		SELECT
+		DISTINCT fire_year
 	FROM
-	  data.fire_polygons
+		data.fire_polygons
 	ORDER BY fire_year DESC
 	LIMIT 5
-	  )b;
-  END
+		)b;
+	END
 $BODY$;
 
 
 
 CREATE OR REPLACE FUNCTION data.asset_previous_forecast_made_at 
 (
-  in_asset_id integer,
-  OUT previous_forecast_made_at timestamp with time zone
+	in_asset_id integer,
+	OUT previous_forecast_made_at timestamp with time zone
 )
-  RETURNS SETOF timestamp with time zone
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF timestamp with time zone
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 1
+	COST 100
+	VOLATILE
+	ROWS 1
 AS $BODY$
-  BEGIN 
-	  RETURN QUERY
-	  SELECT 
+	BEGIN 
+		RETURN QUERY
+		SELECT 
 		forecast_made_at - INTERVAL '12 hour' as previous_forecast_made_at 
-	  FROM
+		FROM
 		data.assets_forecast
-	  WHERE 
-	  asset_id = in_asset_id
+		WHERE 
+		asset_id = in_asset_id
 	ORDER BY 
 		forecast_made_at DESC
 	LIMIT 1;
-  END
-  $BODY$;
+	END
+	$BODY$;
 
 CREATE OR REPLACE FUNCTION data.sentinel_previous_forecast_made_at 
 (
-  in_sentinel_id integer,
-  OUT previous_forecast_made_at timestamp with time zone
+	in_sentinel_id integer,
+	OUT previous_forecast_made_at timestamp with time zone
 )
-  RETURNS SETOF timestamp with time zone
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF timestamp with time zone
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 1
+	COST 100
+	VOLATILE
+	ROWS 1
 AS $BODY$
-  BEGIN 
-	  RETURN QUERY
-	  SELECT 
+	BEGIN 
+		RETURN QUERY
+		SELECT 
 		forecast_made_at - INTERVAL '12 hour' as previous_forecast_made_at 
-	  FROM
+		FROM
 		data.sentinels_forecast
-	  WHERE 
-	  sentinel_id = in_sentinel_id
+		WHERE 
+		sentinel_id = in_sentinel_id
 	ORDER BY 
 		forecast_made_at DESC
 	LIMIT 1;
-  END
-  $BODY$;
+	END
+	$BODY$;
 
 --stored_procedure_for_current_forecast
 
 CREATE OR REPLACE FUNCTION data.asset_current_forecast_made_at 
 (
-  in_asset_id integer,
-  OUT previous_forecast_made_at timestamp with time zone 
+	in_asset_id integer,
+	OUT previous_forecast_made_at timestamp with time zone 
 )
-  RETURNS SETOF timestamp with time zone
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF timestamp with time zone
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 1
+	COST 100
+	VOLATILE
+	ROWS 1
 AS $BODY$
-  BEGIN 
-	  RETURN QUERY
-	  SELECT 
+	BEGIN 
+		RETURN QUERY
+		SELECT 
 		forecast_made_at as current_forecast_made_at 
-	  FROM
+		FROM
 		data.assets_forecast
-	  WHERE 
-	  asset_id = in_asset_id
+		WHERE 
+		asset_id = in_asset_id
 	ORDER BY 
 		forecast_made_at DESC
 	LIMIT 1;
-  END
-  $BODY$;
+	END
+	$BODY$;
 
 
 CREATE OR REPLACE FUNCTION data.sentinel_current_forecast_made_at 
 (
-  in_sentinel_id integer,
-  OUT previous_forecast_made_at timestamp with time zone 
+	in_sentinel_id integer,
+	OUT previous_forecast_made_at timestamp with time zone 
 )
-  RETURNS SETOF timestamp with time zone
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF timestamp with time zone
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 1
+	COST 100
+	VOLATILE
+	ROWS 1
 AS $BODY$
-  BEGIN 
-	  RETURN QUERY
-	  SELECT 
+	BEGIN 
+		RETURN QUERY
+		SELECT 
 		forecast_made_at as current_forecast_made_at 
-	  FROM
+		FROM
 		data.sentinels_forecast
-	  WHERE 
-	  sentinel_id = in_sentinel_id
+		WHERE 
+		sentinel_id = in_sentinel_id
 	ORDER BY 
 		forecast_made_at DESC
 	LIMIT 1;
-  END
-  $BODY$;
+	END
+	$BODY$;
 
 -- stored procedure for current forecast plus previous 12 hours 
-CREATE OR REPLACE FUNCTION data.get_asset_current_plus_previous_24hours_forecast
+CREATE OR REPLACE FUNCTION data.get_asset_forecast_plus_previous_24hours_forecast
 (
 	in_asset_id integer,
+	which_forecast varchar(10) default 'current',
 	OUT asset_id integer,
 	OUT forecast_made_at timestamp with time zone,
 	OUT forecast_1h_local timestamp without time zone,
@@ -146,9 +147,11 @@ CREATE OR REPLACE FUNCTION data.get_asset_current_plus_previous_24hours_forecast
 	VOLATILE
 	ROWS 10000
 AS $BODY$
+
 	BEGIN
-	  RETURN QUERY
-	  WITH constants (asset_id, current_forecast_made_at, previous_forecast_made_at) as (
+	IF which_forecast::text = 'current'::text THEN
+		RETURN QUERY
+		WITH constants (asset_id, current_forecast_made_at, previous_forecast_made_at) as (
 		VALUES (in_asset_id, (SELECT data.asset_current_forecast_made_at(in_asset_id)), (SELECT data.asset_previous_forecast_made_at(in_asset_id)))
 		)
 		SELECT
@@ -163,6 +166,8 @@ AS $BODY$
 			data.assets_forecast a
 		on
 			a.forecast_made_at = constants.previous_forecast_made_at - INTERVAL '12 hour'
+		AND
+			a.asset_id = assets.asset_id
 		WHERE
 			a.forecast_1h < constants.previous_forecast_made_at
 		AND
@@ -180,6 +185,8 @@ AS $BODY$
 			data.assets_forecast a
 		on
 			a.forecast_made_at = constants.previous_forecast_made_at
+		AND
+			a.asset_id = assets.asset_id
 		WHERE
 			a.forecast_1h < constants.current_forecast_made_at
 		AND
@@ -197,17 +204,82 @@ AS $BODY$
 			data.assets_forecast a
 		on
 			a.forecast_made_at = constants.current_forecast_made_at
+		AND
+			a.asset_id = assets.asset_id
 		WHERE
 			a.model_id = 9
 		ORDER BY 
 			asset_id, forecast_1h_local;
+	ELSIF which_forecast::text = 'previous'::text THEN
+		RETURN QUERY
+		WITH constants (asset_id, current_forecast_made_at, previous_forecast_made_at) as (
+		VALUES (in_asset_id, (SELECT data.asset_previous_forecast_made_at(in_asset_id)), (SELECT data.asset_previous_forecast_made_at(in_asset_id) - INTERVAL '12 hour'))
+		)
+		SELECT
+			a.asset_id, a.forecast_made_at, a.forecast_1h at time zone assets.time_zone as forecast_1h_local, a.value
+		FROM
+			constants
+		JOIN
+			data.assets assets
+		USING 
+			(asset_id)
+		JOIN
+			data.assets_forecast a
+		on
+			a.forecast_made_at = constants.previous_forecast_made_at - INTERVAL '12 hour'
+		AND
+			a.asset_id = assets.asset_id
+		WHERE
+			a.forecast_1h < constants.previous_forecast_made_at
+		AND
+			a.model_id = 9
+		UNION
+		SELECT
+			a.asset_id, a.forecast_made_at, a.forecast_1h at time zone assets.time_zone as forecast_1h_local, a.value
+		FROM
+			constants
+		JOIN
+			data.assets assets
+		USING 
+			(asset_id)
+		JOIN
+			data.assets_forecast a
+		on
+			a.forecast_made_at = constants.previous_forecast_made_at
+		AND
+			a.asset_id = assets.asset_id
+		WHERE
+			a.forecast_1h < constants.current_forecast_made_at
+		AND
+			a.model_id = 9
+		UNION 
+		SELECT
+			a.asset_id, a.forecast_made_at, a.forecast_1h at time zone assets.time_zone as forecast_1h_local, a.value
+		FROM
+			constants
+		JOIN
+			data.assets assets
+		USING 
+			(asset_id)
+		JOIN
+			data.assets_forecast a
+		on
+			a.forecast_made_at = constants.current_forecast_made_at
+		AND
+			a.asset_id = assets.asset_id
+		WHERE
+			a.model_id = 9
+		ORDER BY 
+			asset_id, forecast_1h_local;
+		END IF;
 	END
 	$BODY$;
 
-
-CREATE OR REPLACE FUNCTION data.get_sentinel_current_plus_previous_24hours_forecast
+-- stored procedure for current forecast plus previous 12 hours 
+CREATE OR REPLACE FUNCTION data.get_sentinel_forecast_plus_previous_24hours_forecast
 (
 	in_sentinel_id integer,
+	which_forecast varchar(10) default 'current',
 	OUT sentinel_id integer,
 	OUT forecast_made_at timestamp with time zone,
 	OUT forecast_1h_local timestamp without time zone,
@@ -219,11 +291,13 @@ CREATE OR REPLACE FUNCTION data.get_sentinel_current_plus_previous_24hours_forec
 	VOLATILE
 	ROWS 10000
 AS $BODY$
+
 	BEGIN
+	IF which_forecast::text = 'current'::text THEN
 		RETURN QUERY
 		WITH constants (sentinel_id, current_forecast_made_at, previous_forecast_made_at) as (
-			VALUES (in_sentinel_id, (SELECT data.sentinel_current_forecast_made_at(in_sentinel_id)), (SELECT data.sentinel_previous_forecast_made_at(in_sentinel_id)))
-			)
+		VALUES (in_sentinel_id, (SELECT data.sentinel_current_forecast_made_at(in_sentinel_id)), (SELECT data.sentinel_previous_forecast_made_at(in_sentinel_id)))
+		)
 		SELECT
 			a.sentinel_id, a.forecast_made_at, a.forecast_1h at time zone sentinels.time_zone as forecast_1h_local, a.value
 		FROM
@@ -236,6 +310,8 @@ AS $BODY$
 			data.sentinels_forecast a
 		on
 			a.forecast_made_at = constants.previous_forecast_made_at - INTERVAL '12 hour'
+		AND
+			a.sentinel_id = sentinels.sentinel_id
 		WHERE
 			a.forecast_1h < constants.previous_forecast_made_at
 		AND
@@ -253,6 +329,8 @@ AS $BODY$
 			data.sentinels_forecast a
 		on
 			a.forecast_made_at = constants.previous_forecast_made_at
+		AND
+			a.sentinel_id = sentinels.sentinel_id
 		WHERE
 			a.forecast_1h < constants.current_forecast_made_at
 		AND
@@ -268,144 +346,207 @@ AS $BODY$
 			(sentinel_id)
 		JOIN
 			data.sentinels_forecast a
-		ON
+		on
 			a.forecast_made_at = constants.current_forecast_made_at
+		AND
+			a.sentinel_id = sentinels.sentinel_id
 		WHERE
 			a.model_id = 9
 		ORDER BY 
-			sentinel_id,forecast_1h_local;
+			sentinel_id, forecast_1h_local;
+	ELSIF which_forecast::text = 'previous'::text THEN
+		RETURN QUERY
+		WITH constants (sentinel_id, current_forecast_made_at, previous_forecast_made_at) as (
+		VALUES (in_sentinel_id, (SELECT data.sentinel_previous_forecast_made_at(in_sentinel_id)), (SELECT data.sentinel_previous_forecast_made_at(in_sentinel_id) - INTERVAL '12 hour'))
+		)
+		SELECT
+			a.sentinel_id, a.forecast_made_at, a.forecast_1h at time zone sentinels.time_zone as forecast_1h_local, a.value
+		FROM
+			constants
+		JOIN
+			data.sentinels sentinels
+		USING 
+			(sentinel_id)
+		JOIN
+			data.sentinels_forecast a
+		on
+			a.forecast_made_at = constants.previous_forecast_made_at - INTERVAL '12 hour'
+		AND
+			a.sentinel_id = sentinels.sentinel_id
+		WHERE
+			a.forecast_1h < constants.previous_forecast_made_at
+		AND
+			a.model_id = 9
+		UNION
+		SELECT
+			a.sentinel_id, a.forecast_made_at, a.forecast_1h at time zone sentinels.time_zone as forecast_1h_local, a.value
+		FROM
+			constants
+		JOIN
+			data.sentinels sentinels
+		USING 
+			(sentinel_id)
+		JOIN
+			data.sentinels_forecast a
+		on
+			a.forecast_made_at = constants.previous_forecast_made_at
+		AND
+			a.sentinel_id = sentinels.sentinel_id
+		WHERE
+			a.forecast_1h < constants.current_forecast_made_at
+		AND
+			a.model_id = 9
+		UNION 
+		SELECT
+			a.sentinel_id, a.forecast_made_at, a.forecast_1h at time zone sentinels.time_zone as forecast_1h_local, a.value
+		FROM
+			constants
+		JOIN
+			data.sentinels sentinels
+		USING 
+			(sentinel_id)
+		JOIN
+			data.sentinels_forecast a
+		on
+			a.forecast_made_at = constants.current_forecast_made_at
+		AND
+			a.sentinel_id = sentinels.sentinel_id
+		WHERE
+			a.model_id = 9
+		ORDER BY 
+			sentinel_id, forecast_1h_local;
+		END IF;
 	END
 	$BODY$;
 
+
 CREATE OR REPLACE FUNCTION data.get_sentinel_info
-  (in_sentinel_id integer, 
-  OUT sentinel_info json)
+	(in_sentinel_id integer, 
+	OUT sentinel_info json)
 	RETURNS SETOF json 
 	LANGUAGE 'plpgsql'
 	COST 100
 	VOLATILE PARALLEL UNSAFE
 AS $BODY$
-  BEGIN
-	  RETURN QUERY
-	  SELECT
-	  json_build_object(
+	BEGIN
+		RETURN QUERY
+		SELECT
+		json_build_object(
 		'station_name', station_name,
 		'station_id', station_id
-	  )
+		)
 	FROM
-	  data.sentinels
+		data.sentinels
 	WHERE
-	  sentinel_id=in_sentinel_id;
-  END
+		sentinel_id=in_sentinel_id;
+	END
 $BODY$;
 
 CREATE OR REPLACE FUNCTION data.get_sentinel_storms_of_record
-  (in_sentinel_id integer, 
-  OUT sentinel_storms_of_record json)
+	(in_sentinel_id integer, 
+	OUT sentinel_storms_of_record json)
 	RETURNS SETOF json 
 	LANGUAGE 'plpgsql'
 	COST 100
 	VOLATILE PARALLEL UNSAFE
 AS $BODY$
-  BEGIN
-	  RETURN QUERY
-	  SELECT
-	  json_build_object(
+	BEGIN
+		RETURN QUERY
+		SELECT
+		json_build_object(
 		'station_name', sentinel.station_name,
 		'station_id', sentinel.station_id,
 		'start_date', storm.storm_start_date,
 		'end_date', storm.storm_start_date + storm.storm_duration * INTERVAL '1 day',
 		'magnitude', storm.storm_magnitude
-	  )
+		)
 	FROM
-	  data.sentinels_historic_storms storm
+		data.sentinels_historic_storms storm
 	JOIN
-	  data.sentinels sentinel
+		data.sentinels sentinel
 	ON
-	  storm.sentinel_id=sentinel.sentinel_id
+		storm.sentinel_id=sentinel.sentinel_id
 	WHERE
-	  storm.sentinel_id=in_sentinel_id;
-  END
+		storm.sentinel_id=in_sentinel_id;
+	END
 $BODY$;
 
 CREATE OR REPLACE FUNCTION data.get_asset_info
-  (in_asset_id integer, 
-  OUT asset_info json,
-  OUT aoi_polygon geometry(Polygon, 4236))
+	(in_asset_id integer, 
+	OUT asset_info json,
+	OUT aoi_polygon geometry(Polygon, 4236))
 	RETURNS SETOF record 
 	LANGUAGE 'plpgsql'
 	COST 100
 	VOLATILE PARALLEL UNSAFE
 AS $BODY$
-  BEGIN
-	  RETURN QUERY
+	BEGIN
+		RETURN QUERY
 		SELECT
-		  json_build_object(
-		  	'group_name', parent.group_name,
+			json_build_object(
+				'group_name', parent.group_name,
 			'asset_name', asset.asset_name,
 			'asset_description', asset.asset_description,
 			'risk_level',risk_level.risk
-		  ),
-		  asset.aoi_geom4326
+			),
+			asset.aoi_geom4326
 		FROM
-		  data.assets asset
+			data.assets asset
 		JOIN 
-		  (
+			(
 			SELECT
-			  asset.asset_id,
-			  asset.asset_name,
-			  risk.risk
+				asset.asset_id,
+				asset.asset_name,
+				risk.risk
 			FROM
-			  data.assets asset
+				data.assets asset
 			JOIN
-			  (SELECT asset_id,max(risk_level) as risk from data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id) group by asset_id) risk
+				(SELECT asset_id,max(risk_level) as risk from data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id) group by asset_id) risk
 			USING
-			  (asset_id)
+				(asset_id)
 			WHERE
-			  asset.asset_id=in_asset_id
+				asset.asset_id=in_asset_id
 			GROUP BY
-			  asset.asset_id,risk.risk
-		  ) risk_level
-		  
+				asset.asset_id,risk.risk
+			) risk_level
+			
 		USING
 			(asset_id)
 		JOIN
-		  data.groups parent
+			data.groups parent
 		ON
-		  asset.group_id=parent.group_id
+			asset.group_id=parent.group_id
 		WHERE
-		  asset.asset_id=in_asset_id;
-  END
+			asset.asset_id=in_asset_id;
+	END
 $BODY$;
 
 
 -- stored procedure for getting 3 hour rainfall buckets for assets 
 CREATE OR REPLACE FUNCTION data.get_asset_3hr_buckets(
-  in_asset_id integer,
-  OUT asset_id integer,
-  OUT forecast_made_at timestamp with time zone,
-  OUT forecast_1h_local timestamp without time zone,
-  OUT value_3h double precision
+	in_asset_id integer,
+	OUT asset_id integer,
+	OUT forecast_made_at timestamp with time zone,
+	OUT forecast_1h_local timestamp without time zone,
+	OUT value_3h double precision
 )
-  RETURNS SETOF RECORD
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF RECORD
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 100
+	COST 100
+	VOLATILE
+	ROWS 100
 AS $BODY$
-  BEGIN
-  	RETURN QUERY
-  	with hourly_data as(  
-  		SELECT
-  			full_data.asset_id, 
-			full_data.forecast_made_at,
-			full_data.forecast_1h_local,
-			full_data.value
-  		FROM
-  			(select * from data.get_asset_current_plus_previous_24hours_forecast(in_asset_id)) full_data
-		WHERE
-			full_data.asset_id = in_asset_id
+	BEGIN
+		RETURN QUERY
+		with hourly_data as(	
+			SELECT
+				full_data.asset_id, 
+				full_data.forecast_made_at,
+				full_data.forecast_1h_local,
+				full_data.value
+			FROM
+				data.get_asset_forecast_plus_previous_24hours_forecast(in_asset_id) full_data
 		),
 		a as (
 			SELECT
@@ -413,7 +554,7 @@ AS $BODY$
 				b.forecast_made_at,
 				b.forecast_1h_local,
 				SUM(b.value) OVER (ORDER BY b.asset_id,b.forecast_made_at,b.forecast_1h_local
-                      ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS value_3h,
+					ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS value_3h,
 				extract (hour from b.forecast_1h_local) as hour
 			FROM 
 				hourly_data b
@@ -433,37 +574,35 @@ AS $BODY$
 		hour in (12,15,18,21,0,3,6,9)
 	AND 
 		a.forecast_1h_local::date >= (SELECT data.asset_current_forecast_made_at(in_asset_id)::date);
-  END
-  $BODY$;
+	END
+	$BODY$;
 
 
 -- stored procedure for getting 3 hour rainfall buckets for sentinels 
 CREATE OR REPLACE FUNCTION data.get_sentinel_3hr_buckets(
-  in_sentinel_id integer,
-  OUT sentinel_id integer,
-  OUT forecast_made_at timestamp with time zone,
-  OUT forecast_1h_local timestamp without time zone,
-  OUT value_3h double precision
+	in_sentinel_id integer,
+	OUT sentinel_id integer,
+	OUT forecast_made_at timestamp with time zone,
+	OUT forecast_1h_local timestamp without time zone,
+	OUT value_3h double precision
 )
-  RETURNS SETOF RECORD
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF RECORD
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 100
+	COST 100
+	VOLATILE
+	ROWS 100
 AS $BODY$
-  BEGIN
-  	RETURN QUERY
-  	with hourly_data as(  
-  		SELECT
-  			full_data.sentinel_id, 
-			full_data.forecast_made_at,
-			full_data.forecast_1h_local,
-			full_data.value
-  		FROM
-  			(select * from data.get_sentinel_current_plus_previous_24hours_forecast(in_sentinel_id)) full_data
-		WHERE
-			full_data.sentinel_id = in_sentinel_id
+	BEGIN
+		RETURN QUERY
+		with hourly_data as(
+			SELECT
+				full_data.sentinel_id, 
+				full_data.forecast_made_at,
+				full_data.forecast_1h_local,
+				full_data.value
+			FROM
+				data.get_sentinel_forecast_plus_previous_24hours_forecast(in_sentinel_id) full_data
 		),
 		a as (
 			SELECT
@@ -471,7 +610,7 @@ AS $BODY$
 				b.forecast_made_at,
 				b.forecast_1h_local,
 				SUM(b.value) OVER (ORDER BY b.sentinel_id,b.forecast_made_at,b.forecast_1h_local
-                      ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS value_3h,
+						ROWS BETWEEN CURRENT ROW AND 2 FOLLOWING) AS value_3h,
 				extract (hour from b.forecast_1h_local) as hour
 			FROM 
 				hourly_data b
@@ -491,8 +630,8 @@ AS $BODY$
 		hour in (12,15,18,21,0,3,6,9)
 	AND 
 		a.forecast_1h_local::date >= (SELECT data.sentinel_current_forecast_made_at(in_sentinel_id)::date);
-  END
-  $BODY$;
+	END
+	$BODY$;
 
 -- stored procedure for risk levels of assets for current forecasts 
 CREATE OR REPLACE FUNCTION data.get_asset_one_and_two_day_current_forecast_risk_level(
@@ -516,12 +655,12 @@ AS $BODY$
 		RETURN QUERY
 		with hourly_rainfall as(
 	SELECT
-  	 	a.asset_id, 
+		a.asset_id, 
 		a.forecast_made_at,
 		a.forecast_1h_local,
 		a.value
-  	FROM
-  		data.get_asset_current_plus_previous_24hours_forecast(in_asset_id) a
+		FROM
+			data.get_asset_forecast_plus_previous_24hours_forecast(in_asset_id) a
 ), per_day as (
 		SELECT
 			b.asset_id,
@@ -534,55 +673,53 @@ AS $BODY$
 			data.assets c
 		USING
 			(asset_id)
-		WHERE
-			b.asset_id = in_asset_id
 		GROUP BY 
 			b.forecast_1h_local::date, 
 			b.asset_id,
 			watershed_feature_id
-			), per24_48 as (
-					SELECT
-						per_day.*,
-						sum(per_day.one_day) over (ORDER BY per_day.dt
-	   						rows between current row and 1 following) as two_day
-					FROM
-						per_day
-			)
+), per24_48 as (
+			SELECT
+				per_day.*,
+				sum(per_day.one_day) over (ORDER BY per_day.dt
+						rows between current row and 1 following) as two_day
+			FROM
+				per_day
+)
 			SELECT
 				per24_48.asset_id,
 				per24_48.dt,
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN  per24_48.one_day <= hr24_5yr THEN 1
-				WHEN  per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN  per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN  per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN  per24_48.one_day > hr24_100yr THEN 5
+				WHEN per24_48.one_day <= hr24_5yr THEN 1
+				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
+				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
+				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
+				WHEN per24_48.one_day > hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN  per24_48.two_day <= hr48_5yr THEN 1
-				WHEN  per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN  per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN  per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN  per24_48.two_day > hr48_100yr THEN 5
+				WHEN per24_48.two_day <= hr48_5yr THEN 1
+				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
+				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
+				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
+				WHEN per24_48.two_day > hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN  per24_48.one_day <= hr24_5yr THEN 1
-				WHEN  per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN  per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN  per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN  per24_48.one_day > hr24_100yr THEN 5
+				WHEN per24_48.one_day <= hr24_5yr THEN 1
+				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
+				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
+				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
+				WHEN per24_48.one_day > hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN  per24_48.two_day <= hr48_5yr THEN 1
-				WHEN  per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN  per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN  per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN  per24_48.two_day > hr48_100yr THEN 5
+				WHEN per24_48.two_day <= hr48_5yr THEN 1
+				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
+				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
+				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
+				WHEN per24_48.two_day > hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
@@ -591,8 +728,6 @@ AS $BODY$
 			USING
 				(watershed_feature_id)
 			WHERE 
-				per24_48.asset_id = in_asset_id
-			AND 
 				per24_48.dt >= (SELECT data.asset_current_forecast_made_at(in_asset_id)::date)
 			ORDER BY asset_id,dt;
 	END
@@ -620,21 +755,18 @@ AS $BODY$
 		RETURN QUERY
 		with hourly_rainfall as(	
 SELECT
-  	 	a.asset_id, 
+		a.asset_id, 
 		a.forecast_made_at,
-		a.forecast_1h,
+		a.forecast_1h_local,
 		a.value
-  	FROM
-  		data.assets_forecast a
-  	WHERE
-  		a.forecast_made_at = (SELECT data.asset_previous_forecast_made_at(in_asset_id))
-  	and
-  		a.model_id = 9 
+	FROM
+		data.get_asset_forecast_plus_previous_24hours_forecast(in_asset_id, 'previous') a
+
 ), per_day as (
 		SELECT
 			b.asset_id,
 			c.watershed_feature_id,
-			b.forecast_1h::date as dt,
+			b.forecast_1h_local::date as dt,
 			sum(b.value) as one_day
 		FROM
 			hourly_rainfall b
@@ -645,14 +777,14 @@ SELECT
 		WHERE
 			b.asset_id = in_asset_id
 		GROUP BY 
-			b.forecast_1h::date, 
+			b.forecast_1h_local::date, 
 			b.asset_id,
 			watershed_feature_id
 			), per24_48 as (
 					SELECT
 						per_day.*,
 						sum(per_day.one_day) over (ORDER BY per_day.dt
-	   						rows between current row and 1 following) as two_day
+								rows between current row and 1 following) as two_day
 					FROM
 						per_day
 			)
@@ -662,35 +794,35 @@ SELECT
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN  per24_48.one_day <= hr24_5yr THEN 1
-				WHEN  per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN  per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN  per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN  per24_48.one_day > hr24_100yr THEN 5
+				WHEN per24_48.one_day <= hr24_5yr THEN 1
+				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
+				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
+				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
+				WHEN per24_48.one_day > hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN  per24_48.two_day <= hr48_5yr THEN 1
-				WHEN  per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN  per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN  per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN  per24_48.two_day > hr48_100yr THEN 5
+				WHEN per24_48.two_day <= hr48_5yr THEN 1
+				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
+				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
+				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
+				WHEN per24_48.two_day > hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN  per24_48.one_day <= hr24_5yr THEN 1
-				WHEN  per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN  per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN  per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN  per24_48.one_day > hr24_100yr THEN 5
+				WHEN per24_48.one_day <= hr24_5yr THEN 1
+				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
+				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
+				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
+				WHEN per24_48.one_day > hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN  per24_48.two_day <= hr48_5yr THEN 1
-				WHEN  per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN  per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN  per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN  per24_48.two_day > hr48_100yr THEN 5
+				WHEN per24_48.two_day <= hr48_5yr THEN 1
+				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
+				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
+				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
+				WHEN per24_48.two_day > hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
@@ -699,8 +831,6 @@ SELECT
 			USING
 				(watershed_feature_id)
 			WHERE 
-				per24_48.asset_id = in_asset_id
-			AND 
 				per24_48.dt >= (SELECT data.asset_current_forecast_made_at(in_asset_id)::date)
 			ORDER BY asset_id,dt;
 	END
@@ -728,12 +858,12 @@ AS $BODY$
 		RETURN QUERY
 		with hourly_rainfall as(
 	SELECT
-  	 	a.sentinel_id, 
+		a.sentinel_id, 
 		a.forecast_made_at,
 		a.forecast_1h_local,
 		a.value
-  	FROM
-  		data.get_sentinel_current_plus_previous_24hours_forecast(in_sentinel_id) a
+	FROM
+		data.get_sentinel_forecast_plus_previous_24hours_forecast(in_sentinel_id) a
 ), per_day as (
 		SELECT
 			c.sentinel_id,
@@ -774,7 +904,7 @@ AS $BODY$
 					SELECT
 						per_day.*,
 						sum(per_day.one_day) over (ORDER BY per_day.dt
-	   						rows between current row and 1 following) as two_day
+								rows between current row and 1 following) as two_day
 					FROM
 						per_day
 			)
@@ -784,35 +914,35 @@ AS $BODY$
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN  per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN  per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN  per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN  per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN  per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
+				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
+				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
+				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
+				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN  per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN  per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN  per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN  per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN  per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
+				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
+				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
+				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
+				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN  per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN  per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN  per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN  per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN  per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
+				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
+				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
+				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
+				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN  per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN  per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN  per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN  per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN  per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
+				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
+				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
+				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
+				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
@@ -850,16 +980,12 @@ AS $BODY$
 		RETURN QUERY
 with hourly_rainfall as(	
 SELECT
-  	 	a.sentinel_id, 
+		a.sentinel_id, 
 		a.forecast_made_at,
-		a.forecast_1h,
+		a.forecast_1h_local,
 		a.value
-  	FROM
-  		data.sentinels_forecast a
-  	WHERE
-  		a.forecast_made_at = (SELECT data.sentinel_previous_forecast_made_at(in_sentinel_id))
-	and 
-		a.model_id = 9 
+	FROM
+		data.get_sentinel_forecast_plus_previous_24hours_forecast(in_sentinel_id, 'previous') a
 ), per_day as (
 		SELECT
 			c.sentinel_id,
@@ -873,7 +999,7 @@ SELECT
 			c.hr48_20yr,
 			c.hr48_50yr,
 			c.hr48_100yr,
-			b.forecast_1h::date as dt,
+			b.forecast_1h_local::date as dt,
 			sum(b.value) as one_day
 		FROM
 			hourly_rainfall b
@@ -881,10 +1007,8 @@ SELECT
 			data.sentinels c
 		USING
 			(sentinel_id)
-		WHERE
-			b.sentinel_id = in_sentinel_id
 		GROUP BY 
-			b.forecast_1h::date, 
+			b.forecast_1h_local::date, 
 			c.sentinel_id,
 			c.hr24_5yr,
 			c.hr24_10yr,
@@ -900,7 +1024,7 @@ SELECT
 					SELECT
 						per_day.*,
 						sum(per_day.one_day) over (ORDER BY per_day.dt
-	   						rows between current row and 1 following) as two_day
+							rows between current row and 1 following) as two_day
 					FROM
 						per_day
 			)
@@ -910,35 +1034,35 @@ SELECT
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN  per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN  per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN  per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN  per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN  per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
+				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
+				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
+				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
+				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN  per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN  per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN  per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN  per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN  per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
+				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
+				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
+				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
+				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN  per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN  per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN  per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN  per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN  per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
+				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
+				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
+				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
+				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN  per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN  per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN  per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN  per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN  per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
+				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
+				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
+				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
+				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
@@ -947,8 +1071,6 @@ SELECT
 			USING
 				(sentinel_id,dt)
 			WHERE 
-				per24_48.sentinel_id = in_sentinel_id
-			AND 
 				per24_48.dt >= (SELECT data.sentinel_current_forecast_made_at(in_sentinel_id)::date)
 			ORDER BY sentinel_id,dt;
 	END
@@ -959,74 +1081,74 @@ CREATE OR REPLACE FUNCTION data.get_asset_rainfall_bar_chart(
 in_asset_id integer,
 OUT bar_chart_data json
 )
-  RETURNS SETOF json
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 1
- AS $BODY$
- 	BEGIN
- 		RETURN QUERY
- 		SELECT
- 			JSON_AGG(b)
- 		FROM
- 		(
- 		with buckets_3hr as(
- 				SELECT 
- 					* 
- 				FROM 
- 					data.get_asset_3hr_buckets(in_asset_id)
- 			)
- 			SELECT
- 				buckets_3hr.forecast_1h_local,
- 				buckets_3hr.value_3h,
- 				a.risk_level
- 			FROM
- 				buckets_3hr
-			JOIN
- 				(SELECT * FROM data.get_asset_one_and_two_day_forecast_risk_level(in_asset_id)) a
- 			ON
- 				a.dt = buckets_3hr.forecast_1h_local::date)b;
- 	END
- 	$BODY$;
+	COST 100
+	VOLATILE
+	ROWS 1
+AS $BODY$
+	BEGIN
+		RETURN QUERY
+		SELECT
+			JSON_AGG(b)
+		FROM
+		(
+		with buckets_3hr as(
+				SELECT 
+					* 
+				FROM 
+					data.get_asset_3hr_buckets(in_asset_id)
+			)
+			SELECT
+				buckets_3hr.forecast_1h_local,
+				buckets_3hr.value_3h,
+				a.risk_level
+			FROM
+				buckets_3hr
+		JOIN
+				(SELECT * FROM data.get_asset_one_and_two_day_forecast_risk_level(in_asset_id)) a
+			ON
+				a.dt = buckets_3hr.forecast_1h_local::date)b;
+	END
+	$BODY$;
 
 --stored procedure for sentinel's rainfall bar chart 
 CREATE OR REPLACE FUNCTION data.get_sentinel_rainfall_bar_chart(
 in_sentinel_id integer,
 OUT bar_chart_data json
 )
-  RETURNS SETOF json
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 1
- AS $BODY$
- 	BEGIN
- 		RETURN QUERY
- 		SELECT
- 			JSON_AGG(b)
- 		FROM
- 		(
- 		with buckets_3hr as(
- 				SELECT 
- 					* 
- 				FROM 
- 					data.get_sentinel_3hr_buckets(in_sentinel_id)
- 			)
- 			SELECT
- 				buckets_3hr.forecast_1h_local,
- 				buckets_3hr.value_3h,
- 				a.risk_level
- 			FROM
- 				buckets_3hr
-			JOIN
- 				(SELECT * FROM data.get_sentinel_one_and_two_day_forecast_risk_level(in_sentinel_id)) a
- 			ON
- 				a.dt = buckets_3hr.forecast_1h_local::date)b;
- 	END
- 	$BODY$;
+	COST 100
+	VOLATILE
+	ROWS 1
+AS $BODY$
+	BEGIN
+		RETURN QUERY
+		SELECT
+			JSON_AGG(b)
+		FROM
+		(
+		with buckets_3hr as(
+				SELECT 
+					* 
+				FROM 
+					data.get_sentinel_3hr_buckets(in_sentinel_id)
+			)
+			SELECT
+				buckets_3hr.forecast_1h_local,
+				buckets_3hr.value_3h,
+				a.risk_level
+			FROM
+				buckets_3hr
+		JOIN
+				(SELECT * FROM data.get_sentinel_one_and_two_day_forecast_risk_level(in_sentinel_id)) a
+			ON
+				a.dt = buckets_3hr.forecast_1h_local::date)b;
+	END
+	$BODY$;
 
 --stored procedure for assets rainfall table/calendar day
 
@@ -1038,11 +1160,11 @@ OUT asset_calendar_day_data json
 	LANGUAGE 'plpgsql'
 
 	COST 100
-  	VOLATILE
-  	ROWS 1
- 	AS $BODY$
- 	BEGIN
- 		RETURN QUERY
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
 		with b as (
 		SELECT
 			asset_id,
@@ -1109,11 +1231,11 @@ OUT sentinel_calendar_day_data json
 	LANGUAGE 'plpgsql'
 
 	COST 100
-  	VOLATILE
-  	ROWS 1
- 	AS $BODY$
- 	BEGIN
- 		RETURN QUERY
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
 		with b as (
 		SELECT
 			sentinel_id,
@@ -1169,36 +1291,36 @@ OUT sentinel_calendar_day_data json
 
 -- stored procedure for get_asset_antecedent_rain()
 CREATE OR REPLACE FUNCTION data.get_asset_antecedent_rain(
-  in_asset_id integer,
-  OUT antecedant_data json
+	in_asset_id integer,
+	OUT antecedant_data json
 )
-  RETURNS SETOF json
-  LANGUAGE 'plpgsql'
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
 
-  COST 100
-  VOLATILE
-  ROWS 1
+	COST 100
+	VOLATILE
+	ROWS 1
 AS $BODY$
-  BEGIN 
-	  RETURN QUERY
-	  SELECT 
-	  row_to_json(b)
+	BEGIN 
+		RETURN QUERY
+		SELECT 
+			row_to_json(b)
 	FROM(
-	   SELECT
-		  a.seven_day,
-		  a.thirty_day,
-		  a.seven_day_pct_normal,
-		  a.thirty_day_pct_normal
+		SELECT
+			a.seven_day,
+			a.thirty_day,
+			a.seven_day_pct_normal,
+			a.thirty_day_pct_normal
 		FROM
-		  data.assets_antecedant a
+			data.assets_antecedant a
 		WHERE
-		  asset_id = in_asset_id
+			asset_id = in_asset_id
 		ORDER BY 
-		  created DESC
+			created DESC
 		LIMIT 1
 		)b;
-  END
-  $BODY$;
+	END
+	$BODY$;
 
  -- stored procedure for watershed AEP values in the report 
 CREATE OR REPLACE FUNCTION data.asset_watershed_aep(
@@ -1208,11 +1330,11 @@ OUT watershed_aep_data json
 	RETURNS SETOF json
 	LANGUAGE 'plpgsql'
 	COST 100
-  	VOLATILE
-  	ROWS 1
- 	AS $BODY$
- 	BEGIN
- 		RETURN QUERY
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
 			SELECT row_to_json(c)
 			FROM(
 			SELECT
