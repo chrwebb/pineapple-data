@@ -18,10 +18,16 @@ function road {
 }
 
 function freshwater_atlas {
-	bcdata bc2pg freshwater-atlas-watersheds --db_url postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE --table freshwater_atlas --schema data
+	unzip -qun data/test/fwa_4326.zip -d data/test/
+	ogr2ogr -overwrite -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fwa_4326.geojson -dialect sqlite -nln data.freshwater_atlas_upstream -sql "select watershed_feature_id, Geometry as geom4326 from fwa_4326"
+	rm data/test/fwa_4326.geojson
+
+	# bcdata bc2pg freshwater-atlas-watersheds --db_url postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE --table freshwater_atlas --schema data
 }
 
 function climate_normals {
+	rm ./data/PPT*
+
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT01.tif
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT02.tif
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT03.tif
@@ -35,7 +41,20 @@ function climate_normals {
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT11.tif
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT12.tif
 
-	gdalbuildvrt ./data/test.vrt ./data/PPT01.tif
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT01.tif data.climate_normals_ppt1 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT02.tif data.climate_normals_ppt2 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT03.tif data.climate_normals_ppt3 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT04.tif data.climate_normals_ppt4 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT05.tif data.climate_normals_ppt5 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT06.tif data.climate_normals_ppt6 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT07.tif data.climate_normals_ppt7 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT08.tif data.climate_normals_ppt8 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT09.tif data.climate_normals_ppt9 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT10.tif data.climate_normals_ppt10 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT11.tif data.climate_normals_ppt11 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT12.tif data.climate_normals_ppt12 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+
+	rm ./data/PPT*
 
 	python setup/python/watershed_centroid_precip.py
 }
