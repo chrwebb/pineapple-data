@@ -1638,6 +1638,26 @@ INSERT INTO data.assets_forecast (
 	WHERE
 		forecast_made_at = '2021-11-13 12:00:00-00';
 
+-- create 2 instances of forecasts to get change for previous previous forecast
+INSERT INTO data.assets_forecast (
+	asset_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+	SELECT
+		asset_id,
+		'2021-11-12 00:00:00-00'::timestamp with time zone as forecast_made_at,
+		forecast_1h - INTERVAL '36 hour',
+		model_id,
+		value*(random() * 0.1 + 0.8) as value
+	FROM
+		data.assets_forecast
+	WHERE
+		forecast_made_at = '2021-11-13 12:00:00-00';
+
+
 --populate fake previous forecast
 
 INSERT INTO data.sentinels_forecast(
@@ -2788,6 +2808,24 @@ INSERT INTO data.sentinels_forecast (
 		sentinel_id,
 		'2021-11-12 12:00:00-00'::timestamp with time zone as forecast_made_at,
 		forecast_1h - INTERVAL '24 hour',
+		model_id,
+		value*(random() * 0.1 + 0.8) as value
+	FROM
+		data.sentinels_forecast
+	WHERE
+		forecast_made_at = '2021-11-13 12:00:00-00';
+
+INSERT INTO data.sentinels_forecast (
+	sentinel_id,
+	forecast_made_at,
+	forecast_1h,
+	model_id,
+	value
+)
+	SELECT
+		sentinel_id,
+		'2021-11-12 00:00:00-00'::timestamp with time zone as forecast_made_at,
+		forecast_1h - INTERVAL '36 hour',
 		model_id,
 		value*(random() * 0.1 + 0.8) as value
 	FROM
