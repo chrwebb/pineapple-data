@@ -42,9 +42,11 @@ centroid_query = """
 
 centroid_point_query = """
 	SELECT
-		ST_Value(rast, %(x)s, %(y)s)
-	FROm
+		ST_Value(rast, ST_Point(%(x)s, %(y)s, 4326))
+	FROM
 		data.climate_normals_ppt{}
+	WHERE
+		ST_Intersects(rast, ST_Point(%(x)s, %(y)s, 4326));
 """
 
 area_query = """
@@ -77,13 +79,13 @@ for i, location in enumerate(iter_cur):
 		value=cur.fetchall()[0]['mean']
 
 		if value==None:
-			cur.execute(centroid_point_query,{'x': location['lon'], 'y': location['lat']})
+			cur.execute(centroid_point_query.format(b),{'x': location['lon'], 'y': location['lat']})
 			value=cur.fetchall()[0]["st_value"]
 	
 		insert_dict = insert_dict_temp
 		insert_dict["month"] = b
 		insert_dict["value"] = value
-		
+
 		cur.execute(insert_query, insert_dict)
 
 db_conn.commit()
