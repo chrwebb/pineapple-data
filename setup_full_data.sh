@@ -56,7 +56,7 @@ function climate_normals {
 
 	rm ./data/PPT*
 
-	python setup/python/watershed_centroid_precip.py
+	python3 setup/python/watershed_centroid_precip.py
 }
 
 main "$@"

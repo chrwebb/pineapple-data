@@ -83,7 +83,7 @@ for i, location in enumerate(iter_cur):
 		insert_dict = insert_dict_temp
 		insert_dict["month"] = b
 		insert_dict["value"] = value
-
-		print(insert_dict)
-
+		
 		cur.execute(insert_query, insert_dict)
+
+db_conn.commit()
