@@ -31,41 +31,45 @@ insert_query = """
 	)
 """
 
-centroid_query = """
+asset_query = """
 	SELECT
-		watershed_feature_id,
-		ST_X(ST_Centroid(geom4326)) as lon,
-		ST_Y(ST_Centroid(geom4326)) as lat
+		asset_id,
+		watershed_feature_id
 	FROM
-		data.freshwater_atlas_upstream;
+		data.assets;
 """
 
-centroid_point_query = """
+centroid_query = """
 	SELECT
-		ST_Value(rast, ST_Point(%(x)s, %(y)s, 4326))
+		asset_id,
+		ST_Value(rast, ST_Centroid(aoi_geom4326))
 	FROM
+		data.assets asset
+	JOIN
 		data.climate_normals_ppt{}
+	ON
+		ST_Intersects(ST_Centroid(aoi_geom4326), ppt.rast)
 	WHERE
-		ST_Intersects(rast, ST_Point(%(x)s, %(y)s, 4326));
+		asset.watershed_feature_id=%(watershed_feature_id)s;
 """
 
 area_query = """
 	SELECT
-		wfi.watershed_feature_id as watershed_feature_id,
-		(ST_SummaryStats(ST_Clip(ST_Union(ppt.rast), ST_MakeValid(wfi.geom4326)))).mean as mean
+		(ST_SummaryStats(ST_Clip(ST_Union(ppt.rast), ST_MakeValid(aoi_geom4326)))).mean as mean
 	FROM
-		data.freshwater_atlas_upstream wfi
+		data.assets asset
 	JOIN
 		data.climate_normals_ppt{} ppt
 	ON
-		ST_Intersects(wfi.geom4326, ppt.rast)
+		ST_Intersects(asset.aoi_geom4326, ppt.rast)
 	WHERE
-		wfi.watershed_feature_id=%(wfi)s
+		asset.watershed_feature_id=%(watershed_feature_id)s
 	GROUP BY
-		wfi.watershed_feature_id, wfi.geom4326
+		asset.asset_id, asset.aoi_geom4326;
 """
 
-iter_cur.execute(centroid_query)
+iter_cur.execute(asset_query)
+iter_cur=[{'watershed_feature_id':8925604}]
 
 for i, location in enumerate(iter_cur):
 
@@ -75,7 +79,7 @@ for i, location in enumerate(iter_cur):
 	}
 
 	for b in range(1,13):
-		cur.execute(area_query.format(b),{'wfi': location['watershed_feature_id']})
+		cur.execute(area_query.format(b),{'watershed_feature_id': location['watershed_feature_id']})
 		value=cur.fetchall()[0]['mean']
 
 		if value==None:
