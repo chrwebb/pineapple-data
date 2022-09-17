@@ -69,7 +69,7 @@ area_query = """
 """
 
 iter_cur.execute(asset_query)
-iter_cur=[{'watershed_feature_id':8925604}]
+# iter_cur=[{'watershed_feature_id':8925604}]
 
 for i, location in enumerate(iter_cur):
 
