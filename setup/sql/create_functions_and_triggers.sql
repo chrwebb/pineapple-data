@@ -299,7 +299,7 @@ CREATE TRIGGER asset_table_insert_timezone
   EXECUTE PROCEDURE data.assets_insert_timezone();
 
 --INSERT timezone use trigger for sentinels table 
-DROP TRIGGER IF EXISTS sentinel_table_insert_timezone ON data.seninels;
+DROP TRIGGER IF EXISTS sentinel_table_insert_timezone ON data.sentinels;
 CREATE TRIGGER asset_table_insert_timezone
   BEFORE INSERT ON data.sentinels
   FOR EACH ROW
