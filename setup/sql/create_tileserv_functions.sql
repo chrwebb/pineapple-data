@@ -31,6 +31,7 @@ PARALLEL SAFE;
 
 COMMENT ON FUNCTION data.fire_polygons_tiles_for_year IS 'Get tiled fire polygons for a year';
 
+
 CREATE OR REPLACE FUNCTION data.watershed_polygon_tiles_for_asset(z integer, x integer, y integer, in_asset_id integer)
 RETURNS bytea
 AS $$
