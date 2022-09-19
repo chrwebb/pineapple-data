@@ -37,6 +37,7 @@ export PGPORT=5432
 export PGDATABASE=pineapple
 export PGUSER=username
 export PGPASSWORD=password
+export PGTILESERVER_PASSWORD=password
 ```
 			
 
