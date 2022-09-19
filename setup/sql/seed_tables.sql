@@ -199,7 +199,6 @@ VALUES
 (150, '1128584', 'VERNON SILVER STAR LODGE', 50.3599999999999994, -119.060000000000002, NULL, '0101000020E6100000A4703D0AD7C35DC0AE47E17A142E4940', 23.54492, 47.0898399, 53.1871185, 61.2239456, 67.3440628, 30.8749905, 61.7499809, 69.2915802, 79.0398788, 86.3219299, 1, 1970, 2022);
 UPDATE data.sentinels SET elevation_m = 300;
 
-
 INSERT INTO data.assets (
 	asset_name, 
 	asset_description, 
@@ -216,13 +215,12 @@ INSERT INTO data.assets (
 	fire_past_5_years_m2,
 	length_of_roads_m
 ) VALUES
-('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-121.001396,49.760952,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-121.001396,49.760952,4326),3005), 5000)), 2, 0, 801900, 800000, 417), -- BC MOTI asset
-('kwinshatin cr culv', 'culvert', 1, 50.018529, -120.821957, ST_point(-120.821957,50.018529,4326), 8927602, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.821957,50.018529,4326),3005), 5000)), 0, 0, 1000, 2000, 300), -- BC MOTI asset
-('Godey Creek culv', 'culvert', 1, 50.085495, -120.751576, ST_point(-120.751576,50.085495,4326), 8925604, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.751576,50.085495,4326),3005), 5000)), 0, 0, 1500, 1200, 500), -- BC MOTI asset
-('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.801764,50.114078,4326),3005), 5000)), 2, 0, 171180, 160282, 1500), -- City of Merritt asset
-('James Plant', 'wastewater treatment plant', 3, 49.110502, -122.322585,ST_point(-122.322585, 49.110502,4326), 9981920, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-122.322585, 49.110502,4326),3005),5000)), 0, 0, 0, 0, 10000), -- City of Abbotsford asset
-('Existing pipeline facilities','segment 5 Kingsvale to Merritt', 4, 50.0167, -120.8508, ST_point(-120.8508,50.0167,4326), 9184965, ST_transform(ST_multi(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)),4326), ST_Area(ST_Buffer(ST_transform(ST_point(-120.8508,50.0167,4326),3005), 5000)), 2, 0, 701819,601718, 500) -- Tranmountain asset
-;
+('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 2, 0, 801900, 800000, 417), -- BC MOTI asset
+('kwinshatin cr culv', 'culvert', 1, 50.018529, -120.821957, ST_point(-120.821957,50.018529,4326), 8927602, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8927602), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8927602), 0, 0, 1000, 2000, 300), -- BC MOTI asset
+('Godey Creek culv', 'culvert', 1, 50.085495, -120.751576, ST_point(-120.751576,50.085495,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 0, 0, 1500, 1200, 500), -- BC MOTI asset
+('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), 2, 0, 171180, 160282, 1500), -- City of Merritt asset
+('James Plant', 'wastewater treatment plant', 3, 49.110502, -122.322585,ST_point(-122.322585, 49.110502,4326), 9981920, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9981920), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9981920), 0, 0, 0, 0, 10000), -- City of Abbotsford asset
+('Existing pipeline facilities','segment 5 Kingsvale to Merritt', 4, 50.0167, -120.8508, ST_point(-120.8508,50.0167,4326), 9184965, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9184965), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9184965), 2, 0, 701819,601718, 500);-- Tranmountain asset
 
 INSERT INTO data.climate_normals_1991_2020 (
 	watershed_feature_id,
