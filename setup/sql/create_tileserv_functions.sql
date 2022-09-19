@@ -10,11 +10,11 @@ BEGIN
     ),
     mvtgeom AS (
       SELECT 
-        ST_AsMVTGeom(ST_Transform(t.geom4326, 3857), args.geom) AS geom,
+        ST_AsMVTGeom(t.geom3857, args.geom) AS geom,
 		t.fire_year
       FROM data.fire_polygons t, args
       WHERE 
-		ST_Intersects(ST_Transform(t.geom4326, 3857), args.geom)
+		ST_Intersects(t.geom3857, args.geom)
 		AND
 		t.fire_year=in_year
 	)
