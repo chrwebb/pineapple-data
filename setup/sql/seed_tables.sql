@@ -199,22 +199,6 @@ VALUES
 (150, '1128584', 'VERNON SILVER STAR LODGE', 50.3599999999999994, -119.060000000000002, NULL, '0101000020E6100000A4703D0AD7C35DC0AE47E17A142E4940', 23.54492, 47.0898399, 53.1871185, 61.2239456, 67.3440628, 30.8749905, 61.7499809, 69.2915802, 79.0398788, 86.3219299, 1, 1970, 2022);
 UPDATE data.sentinels SET elevation_m = 300;
 
-
-WITH a AS (
-	SELECT 
-		ST_Multi(ST_CollectionExtract(ST_Buffer((ST_Dump(geom4326)).geom, 0.00000001))) as geom
-	FROM
-		staging.freshwater_atlas_upstream
-	WHERE 
-		watershed_feature_id = 9981920
-)
-UPDATE staging.freshwater_atlas_upstream SET geom4326 = geom
-FROM a
-WHERE watershed_feature_id = 9981920;
-
-UPDATE data.assets a SET aoi_geom4326 = fwa.geom4326 FROM staging.freshwater_atlas_upstream fwa
-WHERE fwa.watershed_feature_id = a.watershed_feature_id;
-
 INSERT INTO data.assets (
 	asset_name, 
 	asset_description, 
