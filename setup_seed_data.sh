@@ -12,5 +12,4 @@ unzip -qun data/test/fwa_4326.zip -d data/test/
 ogr2ogr -overwrite -f PostgreSQL PG:"host=$PGHOST user=$PGUSER dbname=$PGDATABASE" data/test/fwa_4326.geojson -dialect sqlite -nln staging.freshwater_atlas_upstream -sql "select watershed_feature_id, Geometry as geom4326, ST_Transform(Geometry, 3857) as geom3857 from fwa_4326"
 rm data/test/fwa_4326.geojson
 
-psql -h $PGPORT -d $PGDATABASE -U $PGUSER -p $PGPORT -v ON_ERROR_STOP=1 -f setup/sql/seed_tables.sql
-
+psql -h $PGHOST -d $PGDATABASE -U $PGUSER -p $PGPORT -v ON_ERROR_STOP=1 -f setup/sql/seed_tables.sql
