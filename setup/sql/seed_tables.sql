@@ -2,7 +2,7 @@ TRUNCATE data.road_lines RESTART IDENTITY;
 INSERT INTO data.road_lines (geom4326) SELECT (ST_Dump(geom4326)).geom FROM staging.road_lines;
 
 TRUNCATE data.fire_polygons RESTART IDENTITY;
-INSERT INTO data.fire_polygons (fire_year, geom4326) SELECT fire_year, ST_Multi(geom4326) FROM staging.fire_polygons;
+INSERT INTO data.fire_polygons (fire_year, geom4326, geom3857) SELECT fire_year, ST_Multi(geom4326), ST_Multi(geom3857) FROM staging.fire_polygons;
 
 INSERT INTO data.users (auth0_id, user_name) VALUES
 ('EAC742825A9C864A1FD3C43AF32DC', 'BC Ministry of Transportation and Infrastructure'), -- 1
@@ -198,6 +198,12 @@ VALUES
 (149, '1125852', 'OSOYOOS CS', 49.0300000000000011, -119.439999999999998, NULL, '0101000020E61000005C8FC2F528DC5DC0A4703D0AD7834840', 18.2579594, 36.5159187, 41.3463326, 47.7170715, 52.5974846, 21.1041527, 42.2083054, 47.6991272, 54.9101181, 60.3808556, 1, 1990, 2022),
 (150, '1128584', 'VERNON SILVER STAR LODGE', 50.3599999999999994, -119.060000000000002, NULL, '0101000020E6100000A4703D0AD7C35DC0AE47E17A142E4940', 23.54492, 47.0898399, 53.1871185, 61.2239456, 67.3440628, 30.8749905, 61.7499809, 69.2915802, 79.0398788, 86.3219299, 1, 1970, 2022);
 UPDATE data.sentinels SET elevation_m = 300;
+
+INSERT INTO data.groups_sentinels (
+	group_id,
+	sentinel_id
+) VALUES
+(1, 47);
 
 INSERT INTO data.assets (
 	asset_name, 
