@@ -57,26 +57,38 @@ cd flood-project
 ```
 ## Azure Provisioning
 
-See the [terraform](./terraform) directory for details. 
+See the [terraform-db](./terraform-db) directory for details.
+
+The repository creates an azure postgresql database on a flexible server, as well as a container instance to initialize the database. The container instance requires credentials to access our azure container registry (acr) and assumes a docker image exists for it (the default variable values point to an existing image to use). To recreate the docker image, run `docker build -t <name> .` from the root of this repository. To push the new image, login to azure acr with `az acr login --name <repository-name>` and push the new image with `docker push <image-name>`.
 
 To create the database, ensure you have the [az cli](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) and [terraform cli](https://learn.hashicorp.com/tutorials/terraform/install-cli) installed. Then:
 - Authenticate to azure with `az login`
-- Create a file in the **/terraform** directory named `secrets.tfvars`, and add a username and password for the database. E.g:
+- Create a file in the **/terraform** directory named `secrets.tfvars`, and add the following values:
+
 ``` 
-admin_username = "admin"
-admin_password = "some-secure-password"
+acr_username=
+acr_password=
+psql_db=
+psql_port=
+psql_user=
+psql_password=
 ```
+
+Where `acr_username` and `acr_password` are credentials to access the azure container registry. If there is not already a service principal created,
+see [here](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-auth-service-principal#create-a-service-principal) for creating a new one. `psql_db` will be the name of the database, `psql_port` the port it exposes, and the user and password will be the admin credentials to access the database.
+
 - If you haven't initialized terraform in this repository before, run `terraform init`
 - Create the resources with `terraform apply -var-file="secrets.tfvars"`
 
 This will provision an Azure Database for Postgres with network rules set to allow communication from internal azure resources . See [here](https://docs.microsoft.com/en-us/azure/azure-sql/database/firewall-configure?view=azuresql#connections-from-inside-azure) for information on the inter-service network rules.
 
+**Known Issue**: When running `terraform destroy`, the azure extensions cause an error when being deleted. Just run the command again if it throws an error.
+
 ## Azure db operations
 
-To run a set of sql files in the cloud database, you can run the github action `migrate.yaml`. This will run the files in the `setup` directory in lexographical order. The base directory can be changed by updating the `plsql-file` field of [that workflow](./.github/workflows/migrate.yaml). To use this action, make sure the github action secrets `AZURE_CREDENTIALS` and `PINEAPPLE_DB_CONNECTION_STRING` are set. See [here](https://github.com/marketplace/actions/azure-postgresql-action#configure-github-secrets-with-azure-credentials-and-postgresql-connection-strings) for information on creating them.
+If you need to connect directly with psql, you will have to change the firewall rules to get access.
 
-It is preferrable to use the github action to avoid having to update firewall rules manually, but if you need to connect directly with psql, you will have to change the firewall rules to get access. 
-1. In the azure portal, navigate to the **psql server** and select `Connection security` from the lefthand menu. Under the firewall rules, click the `Add current client ip address` to allow your ip to connect. 
+1. In the azure portal, navigate to the **psql server** and select `Networking` from the lefthand menu. Under the firewall rules, click the `Add current client ip address` to allow your ip to connect. 
 2. From the same page, go to `Connection strings` on the left side menu and copy the psql string, updating the dbname and password.
 3. Run that command in your terminal to connect
 4. Once finished, go back to connection security and remove your IP address from the firewall rules.

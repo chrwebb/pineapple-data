@@ -3,5 +3,5 @@
 resource "azurerm_postgresql_flexible_server_configuration" "postgis" {
   name      = "azure.extensions"
   server_id = azurerm_postgresql_flexible_server.psql_server.id
-  value     = "POSTGIS,UUID-OSSP"
+  value     = "POSTGIS,UUID-OSSP,POSTGIS_RASTER"
 }

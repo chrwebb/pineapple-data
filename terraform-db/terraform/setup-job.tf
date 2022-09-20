@@ -14,11 +14,11 @@ resource "azurerm_container_group" "init_db" {
 
   container {
     name   = "init-db"
-    image  = "${var.registry_name}/${var.image_name}pineapple_seeds:${var.image_tag}"
+    image  = "${var.registry_name}/${var.image_name}:${var.image_tag}"
     cpu    = "0.5"
     memory = "1"
 
-    environment_variables = {
+    secure_environment_variables = {
         PGHOST=data.azurerm_postgresql_flexible_server.psql_server.fqdn
         PGDATABASE=var.psql_db
         PGUSER=var.psql_user
