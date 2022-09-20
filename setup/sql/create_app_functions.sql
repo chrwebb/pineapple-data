@@ -1107,7 +1107,7 @@ AS $BODY$
 			FROM
 				buckets_3hr
 		JOIN
-				(SELECT * FROM data.get_asset_one_and_two_day_forecast_risk_level(in_asset_id)) a
+				(SELECT * FROM data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id)) a
 			ON
 				a.dt = buckets_3hr.forecast_1h_local::date)b;
 	END
@@ -1144,19 +1144,19 @@ AS $BODY$
 			FROM
 				buckets_3hr
 		JOIN
-				(SELECT * FROM data.get_sentinel_one_and_two_day_forecast_risk_level(in_sentinel_id)) a
+				(SELECT * FROM data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id)) a
 			ON
 				a.dt = buckets_3hr.forecast_1h_local::date)b;
 	END
 	$BODY$;
 
 --stored procedure for assets rainfall table/calendar day
-
 CREATE OR REPLACE FUNCTION data.get_asset_calendar_day_table(
 in_asset_id integer,
-OUT asset_calendar_day_data json
+OUT	change_from_previous_forecast integer,
+OUT	daily_forecast json
 )
-	RETURNS SETOF json
+	RETURNS SETOF RECORD
 	LANGUAGE 'plpgsql'
 
 	COST 100
@@ -1168,24 +1168,22 @@ OUT asset_calendar_day_data json
 		with b as (
 		SELECT
 			asset_id,
-			land_disturbance_fire,
-			land_disturbance_road,
 		CASE
 			WHEN 
 			(SELECT max(risk_level) from data.get_asset_one_and_two_day_previous_forecast_risk_level(in_asset_id))
 			>
 			(SELECT max(risk_level) from data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id))
-		THEN 'down'
+		THEN -1
 		WHEN
 		(SELECT max(risk_level) from data.get_asset_one_and_two_day_previous_forecast_risk_level(in_asset_id))
 		<
 		(SELECT max(risk_level) from data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id))
-		THEN 'up'
+		THEN 1
 		WHEN 
 		(SELECT max(risk_level) from data.get_asset_one_and_two_day_previous_forecast_risk_level(in_asset_id))
 		=
 		(SELECT max(risk_level) from data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id))
-		THEN 'no change'
+		THEN 0
 		END as change_from_previous_forecast
 		FROM
 			data.assets
@@ -1200,34 +1198,27 @@ OUT asset_calendar_day_data json
 			data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id)
 		), ts_json as (
 		SELECT
-			json_agg(ts) as ts
+			json_agg(ts) as daily_forecast
 		FROM
 			ts
-		), build_up as (
+		)
 		SELECT
-			asset_id,
-			land_disturbance_fire,
-			land_disturbance_road, 
-			change_from_previous_forecast,
-			ts
+			b.change_from_previous_forecast,
+			ts_json.daily_forecast
 		FROM
 			b
 		CROSS JOIN
-			ts_json
-		)
-		SELECT
-		json_agg(build_up)
-		FROM
-		build_up;
+			ts_json;
 	END
 	$BODY$;
 --stored procedure for sentinel rainfall table/calendar day
 
 CREATE OR REPLACE FUNCTION data.get_sentinel_calendar_day_table(
 in_sentinel_id integer,
-OUT sentinel_calendar_day_data json
+OUT	change_from_previous_forecast integer,
+OUT	daily_forecast json
 )
-	RETURNS SETOF json
+	RETURNS SETOF RECORD
 	LANGUAGE 'plpgsql'
 
 	COST 100
@@ -1244,17 +1235,17 @@ OUT sentinel_calendar_day_data json
 			(SELECT max(risk_level) from data.get_sentinel_one_and_two_day_previous_forecast_risk_level(in_sentinel_id))
 			>
 			(SELECT max(risk_level) from data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id))
-		THEN 'down'
+		THEN -1
 		WHEN
 		(SELECT max(risk_level) from data.get_sentinel_one_and_two_day_previous_forecast_risk_level(in_sentinel_id))
 		<
 		(SELECT max(risk_level) from data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id))
-		THEN 'up'
+		THEN 1
 		WHEN 
 		(SELECT max(risk_level) from data.get_sentinel_one_and_two_day_previous_forecast_risk_level(in_sentinel_id))
 		=
 		(SELECT max(risk_level) from data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id))
-		THEN 'no change'
+		THEN 0
 		END as change_from_previous_forecast
 		FROM
 			data.sentinels
@@ -1269,26 +1260,19 @@ OUT sentinel_calendar_day_data json
 			data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id)
 		), ts_json as (
 		SELECT
-			json_agg(ts) as ts
+			json_agg(ts) as daily_forecast
 		FROM
 			ts
-		), build_up as (
+		)
 		SELECT
-			sentinel_id,
-			change_from_previous_forecast,
-			ts
+			b.change_from_previous_forecast,
+			ts_json.daily_forecast
 		FROM
 			b
 		CROSS JOIN
-			ts_json
-		)
-		SELECT
-		json_agg(build_up)
-		FROM
-		build_up;
+			ts_json;
 	END
 	$BODY$;
-
 -- stored procedure for get_asset_antecedent_rain()
 CREATE OR REPLACE FUNCTION data.get_asset_antecedent_rain(
 	in_asset_id integer,
@@ -1361,3 +1345,164 @@ OUT watershed_aep_data json
 				)c;
 			END
 			$BODY$;
+
+
+CREATE OR REPLACE FUNCTION data.asset_return_periods(
+in_asset_id integer,
+OUT asset_return_periods json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	SELECT json_agg(c)
+	FROM(
+	WITH aep_values as(
+		SELECT
+			a.asset_id,
+			a.watershed_feature_id,
+			b.hr24_5yr,
+			b.hr24_10yr,
+			b.hr24_20yr,
+			b.hr24_50yr,
+			b.hr24_100yr,
+			b.hr48_5yr,
+			b.hr48_10yr,
+			b.hr48_20yr,
+			b.hr48_50yr,
+			b.hr48_100yr
+		FROM
+			data.assets a
+		JOIN
+			data.pf_grids_aep_rollup b
+		USING 
+			(watershed_feature_id)
+		WHERE 
+			asset_id = in_asset_id
+		)
+	SELECT
+	r.risk_level,
+	CASE 
+		WHEN r.risk_level = 1 then NULL
+		WHEN r.risk_level = 2 then hr24_5yr
+		WHEN r.risk_level = 3 then hr24_10yr
+		WHEN r.risk_level = 4 then hr24_50yr
+		WHEN r.risk_level = 5 then hr24_100yr
+	END AS lb24,
+	CASE 
+		WHEN r.risk_level = 1 then hr24_5yr
+		WHEN r.risk_level = 2 then hr24_10yr
+		WHEN r.risk_level = 3 then hr24_50yr
+		WHEN r.risk_level = 4 then hr24_100yr
+		WHEN r.risk_level = 5 then NULL
+	END AS ub24,
+	CASE 
+		WHEN r.risk_level = 1 then NULL
+		WHEN r.risk_level = 2 then hr48_5yr
+		WHEN r.risk_level = 3 then hr48_10yr
+		WHEN r.risk_level = 4 then hr48_50yr
+		WHEN r.risk_level = 5 then hr48_100yr
+	END AS lb48,
+	CASE 
+		WHEN r.risk_level = 1 then hr48_5yr
+		WHEN r.risk_level = 2 then hr48_10yr
+		WHEN r.risk_level = 3 then hr48_50yr
+		WHEN r.risk_level = 4 then hr48_100yr
+		WHEN r.risk_level = 5 then NULL
+	END AS ub48
+	FROM
+		aep_values a
+		cross join
+		data.risk_levels r) as c;
+				END
+				$BODY$;
+
+--stored procedure for get_asset_by_asset_id()
+
+CREATE OR REPLACE FUNCTION data.get_asset_by_asset_id(
+in_user_id integer,
+in_asset_id integer,
+OUT asset_data json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	WITH buckets as(
+		SELECT
+			*
+		FROM 
+			data.get_asset_rainfall_bar_chart(in_asset_id)
+	),	return_periods as(
+		SELECT
+			*
+		FROM
+			data.asset_return_periods(in_asset_id)
+	),	risk as (
+		SELECT 
+			asset_id,
+			max(risk_level) as risk_level 
+		FROM 
+			data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id) 
+		group by 
+			asset_id
+	),	antecedent as(
+		SELECT
+			*
+		FROM
+			data.get_asset_antecedent_rain(in_asset_id)
+	),
+		daily_forecast as(
+		SELECT
+			*
+		FROM
+			data.get_asset_calendar_day_table(in_asset_id)
+	)
+	SELECT 
+		json_build_object(
+			'id', asset.asset_id,
+			'description', asset.asset_description,
+			'name', asset.asset_name,
+			'riskLevel', risk.risk_level,
+			--'elevationsMasl', jason_build_object(asset.min_elev, asset.max_elev, asset.mean_elev),
+			'location', st_AsGeojson(asset.geom4326),
+			'watershedAreaKm2',asset.aoi_area_m2,
+			'landDisturbance',json_build_object('fire',asset.land_disturbance_fire,'road',asset.land_disturbance_road),
+			'returnPeriods', return_periods.asset_return_periods,
+			'antecedentRain', antecedent.antecedant_data,
+			'forecastDaily', daily_forecast.daily_forecast,
+			'forecast3hour',buckets.bar_chart_data,
+			'changeFromPreviousForecast', daily_forecast.change_from_previous_forecast
+			)
+	FROM
+		data.assets asset
+	JOIN
+		risk
+	USING
+		(asset_id)
+	JOIN
+		data.groups
+	USING
+		(group_id)
+	JOIN
+		(SELECT * FROM data.users where user_id = in_user_id) u
+	USING
+		(user_id)
+	CROSS JOIN 
+		buckets
+	CROSS JOIN
+		return_periods
+	CROSS JOIN
+		antecedent
+	CROSS JOIN
+		daily_forecast;
+	END
+	$BODY$;
