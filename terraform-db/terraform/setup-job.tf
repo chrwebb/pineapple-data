@@ -19,11 +19,12 @@ resource "azurerm_container_group" "init_db" {
     memory = "1"
 
     secure_environment_variables = {
-        PGHOST=data.azurerm_postgresql_flexible_server.psql_server.fqdn
-        PGDATABASE=var.psql_db
-        PGUSER=var.psql_user
-        PGPASSWORD=var.psql_password
-        PGPORT=var.psql_port
+      PGHOST                = data.azurerm_postgresql_flexible_server.psql_server.fqdn
+      PGDATABASE            = var.psql_db
+      PGUSER                = var.psql_user
+      PGPASSWORD            = var.psql_password
+      PGPORT                = var.psql_port
+      PGTILESERVER_PASSWORD = var.pg_tileserver_password
     }
 
     ports {
@@ -35,6 +36,6 @@ resource "azurerm_container_group" "init_db" {
   image_registry_credential {
     username = var.acr_username
     password = var.acr_password
-    server = "foundrymainregistry.azurecr.io"
+    server   = "foundrymainregistry.azurecr.io"
   }
 }

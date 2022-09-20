@@ -9,9 +9,9 @@ resource "azurerm_postgresql_flexible_server" "psql_server" {
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
 
-  administrator_login          = var.psql_user
+  administrator_login    = var.psql_user
   administrator_password = var.psql_password
-  version                      = "13"
+  version                = "13"
   zone                   = "1"
 }
 
