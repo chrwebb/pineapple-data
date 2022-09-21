@@ -24,6 +24,21 @@ INSERT INTO data.networks (network_name, network_name_long) VALUES
 ('NOAA-hydrometric', 'National Oceanic and Atmospheric Administration - Hydrometric Network'),
 ('NOAA-Snotel', 'National Oceanic and Atmospheric Administration - Snow Conditions');
 
+
+INSERT INTO data.groups_sentinels (group_id,user_id,sentinel_id)
+VALUES
+(1,1,104),
+(1,1,14),
+(1,1,100),
+(2,2,47),
+(2,2,104),
+(3,3,116),
+(3,3,130),
+(3,3,5),
+(4,4,104),
+(4,4,41)
+
+
 INSERT INTO data.sentinels (
 	sentinel_id,
 	station_id,

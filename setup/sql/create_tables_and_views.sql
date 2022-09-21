@@ -122,6 +122,7 @@ DROP TABLE IF EXISTS data.groups_sentinels;
 CREATE TABLE data.groups_sentinels -- One to many between group and sentinels
 (
 	group_id int NOT NULL references data.groups,
+	user_id int NOT NULL references data.users,
 	sentinel_id int NOT NULL references data.sentinels,
 	created timestamp with time zone NOT NULL default now(),
 	CONSTRAINT groups_sentinels_unique UNIQUE (group_id, sentinel_id)
