@@ -84,6 +84,7 @@ CREATE OR REPLACE FUNCTION data.fn_watershed_elev_update_event() RETURNS trigger
       WHEN (ST_SummaryStats(ST_Clip(ST_Union(SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, aoi_geom4326)), ST_MakeValid(aoi_geom4326)))).min=None THEN (SELECT ST_Value(a.rast, ST_Centroid(aoi_geom4326)) FROM (SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, aoi_geom4326)) a)
       ELSE (ST_SummaryStats(ST_Clip(ST_Union(SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, aoi_geom4326)), ST_MakeValid(aoi_geom4326)))).min
     END; 
+  NEW.metadata='{"elev_masl_data_source": "Populated with DEM"}'::json; 
   END
  $BODY$
 LANGUAGE plpgsql VOLATILE
@@ -93,7 +94,7 @@ CREATE OR REPLACE FUNCTION data.fn_sentinel_update_event() RETURNS trigger AS
   $BODY$  
   BEGIN
   NEW.elevation_m=(SELECT ST_Value(a.rast, ST_Centroid(geom4326)) FROM (SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, geom4326)) a),
-  NEW.metadata='{"elev_masl_data_source": "Populated with DEM"}'::json
+  NEW.metadata='{"elev_masl_data_source": "Populated with DEM"}'::json;
   END
  $BODY$
 LANGUAGE plpgsql VOLATILE
@@ -124,14 +125,23 @@ CREATE TRIGGER asset_table_insert_fire_road
   FOR EACH ROW
   EXECUTE PROCEDURE data.fn_fire_road_update_event();
 
--- INSERT land use trigger
+-- INSERT watershed elev asset trigger
 DROP TRIGGER IF EXISTS asset_table_insert_watershed_elev ON data.assets;
 CREATE TRIGGER asset_table_insert_watershed_elev
   BEFORE INSERT ON data.assets
   FOR EACH ROW
   EXECUTE PROCEDURE data.fn_watershed_elev_update_event();
 
--- INSERT land use trigger
+-- UPDATE watershed elev asset trigger
+DROP TRIGGER IF EXISTS asset_table_insert_watershed_elev ON data.assets;
+CREATE TRIGGER asset_table_update_watershed_elev
+  AFTER UPDATE OF 
+  geom4326
+  ON data.assets
+  FOR EACH ROW
+  EXECUTE PROCEDURE data.fn_watershed_elev_update_event();
+
+-- INSERT sentinel elev asset trigger
 DROP TRIGGER IF EXISTS sentinel_table_insert_elev ON data.sentinels;
 CREATE TRIGGER sentinel_table_insert_elev
   BEFORE INSERT ON data.sentinels

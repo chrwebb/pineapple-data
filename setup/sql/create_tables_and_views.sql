@@ -152,7 +152,8 @@ CREATE TABLE data.assets
 	created timestamp with time zone NOT NULL default now(),
 	aoi_elev_max_m double precision NOT NULL,
 	aoi_elev_mean_m double precision NOT NULL,
-	aoi_elev_min_m double precision NOT NULL
+	aoi_elev_min_m double precision NOT NULL,
+	metadata json
 );
 
 
