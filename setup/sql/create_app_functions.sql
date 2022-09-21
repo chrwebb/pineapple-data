@@ -1102,15 +1102,15 @@ AS $BODY$
 					data.get_asset_3hr_buckets(in_asset_id)
 			)
 			SELECT
-				buckets_3hr.forecast_1h_local as dt,
-				buckets_3hr.value_3h as value_mm,
+				buckets_3hr.dt,
+				buckets_3hr.value_mm,
 				a.risk_level
 			FROM
 				buckets_3hr
 		JOIN
 				(SELECT * FROM data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id)) a
 			ON
-				a.dt = buckets_3hr.forecast_1h_local::date)b;
+				a.dt = buckets_3hr.dt::date)b;
 	END
 	$BODY$;
 
@@ -1139,15 +1139,15 @@ AS $BODY$
 					data.get_sentinel_3hr_buckets(in_sentinel_id)
 			)
 			SELECT
-				buckets_3hr.forecast_1h_local as dt,
-				buckets_3hr.value_3h as value_mm,
+				buckets_3hr.dt,
+				buckets_3hr.value_mm,
 				a.risk_level
 			FROM
 				buckets_3hr
 		JOIN
 				(SELECT * FROM data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id)) a
 			ON
-				a.dt = buckets_3hr.forecast_1h_local::date)b;
+				a.dt = buckets_3hr.dt::date)b;
 	END
 	$BODY$;
 
