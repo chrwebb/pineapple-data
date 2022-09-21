@@ -29,8 +29,8 @@ function watershed_elevation {
 	wget https://pub.data.gov.bc.ca/datasets/175624/ -r -np -P data/
 	find . -name "*.zip" | while read filename; do unzip -o -d "data/" "$filename"; done;
 	gdal_merge.py -o data/dem_4269.tif data/*.dem
-	gdalwarp -s_srs 4269 -t_srs 4326 data/dem_4269.tif data/dem_4326.tif
-	raster2pgsql -d -C -s 4326 -t 100x100 ./data/dem_4326.tif data.dem_bc | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	gdalwarp -s_srs EPSG:4269 -t_srs EPSG:4326 data/dem_4269.tif data/dem_4326.tif
+	raster2pgsql -d -C -s EPSG:4326 -t 1000x1000 ./data/dem_4326.tif data.dem_bc | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
 	rm data/pub.data.gov.bc.ca -r
 	rm data/dem*
 }
