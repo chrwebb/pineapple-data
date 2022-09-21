@@ -485,7 +485,7 @@ AS $BODY$
 		RETURN QUERY
 		SELECT
 			json_build_object(
-				'group_name', parent.group_name,
+			'group_name', parent.group_name,
 			'asset_name', asset.asset_name,
 			'asset_description', asset.asset_description,
 			'risk_level',risk_level.risk
@@ -528,8 +528,8 @@ CREATE OR REPLACE FUNCTION data.get_asset_3hr_buckets(
 	in_asset_id integer,
 	OUT asset_id integer,
 	OUT forecast_made_at timestamp with time zone,
-	OUT forecast_1h_local timestamp without time zone,
-	OUT value_3h double precision
+	OUT dt timestamp without time zone,
+	OUT value_mm double precision
 )
 	RETURNS SETOF RECORD
 	LANGUAGE 'plpgsql'
@@ -565,8 +565,8 @@ AS $BODY$
 	SELECT
 		a.asset_id,
 		a.forecast_made_at,
-		a.forecast_1h_local,
-		a.value_3h
+		a.forecast_1h_local as dt,
+		a.value_3h as value_mm
 	FROM
 		a
 	WHERE
@@ -584,8 +584,8 @@ CREATE OR REPLACE FUNCTION data.get_sentinel_3hr_buckets(
 	in_sentinel_id integer,
 	OUT sentinel_id integer,
 	OUT forecast_made_at timestamp with time zone,
-	OUT forecast_1h_local timestamp without time zone,
-	OUT value_3h double precision
+	OUT dt timestamp without time zone,
+	OUT value_mm double precision
 )
 	RETURNS SETOF RECORD
 	LANGUAGE 'plpgsql'
@@ -621,8 +621,8 @@ AS $BODY$
 	SELECT
 		a.sentinel_id,
 		a.forecast_made_at,
-		a.forecast_1h_local,
-		a.value_3h
+		a.forecast_1h_local as dt,
+		a.value_3h as value_mm
 	FROM
 		a
 	WHERE
@@ -1102,8 +1102,8 @@ AS $BODY$
 					data.get_asset_3hr_buckets(in_asset_id)
 			)
 			SELECT
-				buckets_3hr.forecast_1h_local,
-				buckets_3hr.value_3h,
+				buckets_3hr.forecast_1h_local as dt,
+				buckets_3hr.value_3h as value_mm,
 				a.risk_level
 			FROM
 				buckets_3hr
@@ -1139,8 +1139,8 @@ AS $BODY$
 					data.get_sentinel_3hr_buckets(in_sentinel_id)
 			)
 			SELECT
-				buckets_3hr.forecast_1h_local,
-				buckets_3hr.value_3h,
+				buckets_3hr.forecast_1h_local as dt,
+				buckets_3hr.value_3h as value_mm,
 				a.risk_level
 			FROM
 				buckets_3hr
@@ -1193,7 +1193,7 @@ OUT	daily_forecast json
 		), ts as (
 		SELECT
 			dt,
-			one_day as daily_ppt,
+			one_day as value_mm,
 			risk_level
 		FROM
 			data.get_asset_one_and_two_day_current_forecast_risk_level(in_asset_id)
@@ -1255,7 +1255,7 @@ OUT	daily_forecast json
 		), ts as (
 		SELECT
 			dt,
-			one_day as daily_ppt,
+			one_day as value_mm,
 			risk_level
 		FROM
 			data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id)
@@ -1620,8 +1620,8 @@ OUT sentinel_data json
 			'forecast3hour', buckets.bar_chart_data,
 			'yearsOfRecord', json_build_object('start',sentinel.start_year,'end',sentinel.end_year),
 			'returnPeriods', return_periods.sentinel_return_periods,
-			'forecastStorms', json_build_object('one_day',json_build_object('date',one_day_forecast_storm.dt,'duration', 1, 'value',one_day_forecast_storm.one_day,'risk_level',one_day_forecast_storm.risk_level_one_day),
-											   'two_day',json_build_object('date',two_day_forecast_storm.dt,'duration', 2, 'value',two_day_forecast_storm.two_day, 'risk_level',two_day_forecast_storm.risk_level_two_day)),
+			'forecastStorms', json_build_object('one_day',json_build_object('dt',one_day_forecast_storm.dt,'duration', 1, 'value_mm',one_day_forecast_storm.one_day,'risk_level',one_day_forecast_storm.risk_level_one_day),
+											   'two_day',json_build_object('dt',two_day_forecast_storm.dt,'duration', 2, 'value_mm',two_day_forecast_storm.two_day, 'risk_level',two_day_forecast_storm.risk_level_two_day)),
 			'historicalStorms',historical_storms.sentinel_storms_of_record,
 			'changeFromPreviousForecast', daily_forecast.change_from_previous_forecast
 			)
