@@ -1662,3 +1662,44 @@ OUT sentinel_data json
 	LIMIT 1; -- in the case that there is the same sentinel in 2 groups owned by the same user.
 	END
 	$BODY$;
+
+-- stored procedure to get all sentinels under one group 
+
+CREATE OR REPLACE FUNCTION data.get_sentinels_by_group_id(
+in_user_id integer,
+in_group_id integer,
+OUT sentinels_under_group json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	WITH sentinels as (
+	SELECT 
+		user_id,
+		sentinel_id
+	FROM 
+		data.groups_sentinels
+	JOIN
+		data.groups
+	using
+		(group_id)
+	JOIN
+		(SELECT * FROM data.users WHERE user_id = in_user_id) u
+	USING 
+		(user_id)
+	WHERE
+		group_id = in_group_id
+	)
+	SELECT
+		json_agg(b.*)
+	FROM
+		sentinels s
+	CROSS JOIN
+		data.get_sentinel_by_sentinel_id(s.user_id,s.sentinel_id) b;
+	END
+	$BODY$;
