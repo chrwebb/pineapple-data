@@ -1668,7 +1668,7 @@ OUT sentinel_data json
 CREATE OR REPLACE FUNCTION data.get_sentinels_by_group_id(
 in_user_id integer,
 in_group_id integer,
-OUT sentinels_under_group json
+OUT sentinels_in_group json
 )
 	RETURNS SETOF json
 	LANGUAGE 'plpgsql'
@@ -1689,7 +1689,7 @@ OUT sentinels_under_group json
 	using
 		(group_id)
 	JOIN
-		(SELECT * FROM data.users WHERE user_id = in_user_id) u
+		(SELECT user_id FROM data.users WHERE user_id = in_user_id) u
 	USING 
 		(user_id)
 	WHERE
