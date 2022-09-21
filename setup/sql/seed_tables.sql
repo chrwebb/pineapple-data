@@ -13,6 +13,7 @@ INSERT INTO data.users (auth0_id, user_name) VALUES
 
 INSERT INTO data.groups (group_name, user_id, risk_level_threshold) VALUES
 ('Highway 5', 1, 1),          -- BC MOTI:                   1
+('other highway', 1, 3),
 ('Infrastructures', 2, 1),    -- City of Merritt:           2
 ('Infrastructures', 3, 1),    -- City of Abbotsford:        3
 ('Pipelines Cluster 1', 4, 3); --Trans Mountain Corporation 4
@@ -23,21 +24,6 @@ INSERT INTO data.networks (network_name, network_name_long) VALUES
 ('MoTI-RWS', 'BC Ministry of Transportation and Infrastructure - Road Weather Stations'),
 ('NOAA-hydrometric', 'National Oceanic and Atmospheric Administration - Hydrometric Network'),
 ('NOAA-Snotel', 'National Oceanic and Atmospheric Administration - Snow Conditions');
-
-
-INSERT INTO data.groups_sentinels (group_id,user_id,sentinel_id)
-VALUES
-(1,1,104),
-(1,1,14),
-(1,1,100),
-(2,2,47),
-(2,2,104),
-(3,3,116),
-(3,3,130),
-(3,3,5),
-(4,4,104),
-(4,4,41)
-
 
 INSERT INTO data.sentinels (
 	sentinel_id,
@@ -214,11 +200,19 @@ VALUES
 (150, '1128584', 'VERNON SILVER STAR LODGE', 50.3599999999999994, -119.060000000000002, NULL, '0101000020E6100000A4703D0AD7C35DC0AE47E17A142E4940', 23.54492, 47.0898399, 53.1871185, 61.2239456, 67.3440628, 30.8749905, 61.7499809, 69.2915802, 79.0398788, 86.3219299, 1, 1970, 2022);
 UPDATE data.sentinels SET elevation_m = 300;
 
-INSERT INTO data.groups_sentinels (
-	group_id,
-	sentinel_id
-) VALUES
-(1, 47);
+
+INSERT INTO data.groups_sentinels (group_id,sentinel_id)
+VALUES
+(1,104),
+(2,104),
+(1,14),
+(1,100),
+(2,47),
+(3,116),
+(3,130),
+(3,5),
+(4,104),
+(4,41);
 
 INSERT INTO data.assets (
 	asset_name, 
@@ -237,6 +231,7 @@ INSERT INTO data.assets (
 	length_of_roads_m
 ) VALUES
 ('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 2, 0, 801900, 800000, 417), -- BC MOTI asset
+('Bottletop West', 'bridge', 2, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 2, 0, 801900, 800000, 417), -- BC MOTI asset
 ('kwinshatin cr culv', 'culvert', 1, 50.018529, -120.821957, ST_point(-120.821957,50.018529,4326), 8927602, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8927602), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8927602), 0, 0, 1000, 2000, 300), -- BC MOTI asset
 ('Godey Creek culv', 'culvert', 1, 50.085495, -120.751576, ST_point(-120.751576,50.085495,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 0, 0, 1500, 1200, 500), -- BC MOTI asset
 ('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), 2, 0, 171180, 160282, 1500), -- City of Merritt asset

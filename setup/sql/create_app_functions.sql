@@ -1636,6 +1636,10 @@ OUT sentinel_data json
 	USING
 		(sentinel_id)
 	JOIN
+		data.groups groups
+	USING
+		(group_id)
+	JOIN
 		(SELECT * FROM data.users where user_id = in_user_id) u
 	using
 		(user_id)
@@ -1654,6 +1658,7 @@ OUT sentinel_data json
 	JOIN
 		data.networks network
 	USING 
-		(network_id);
+		(network_id)
+	LIMIT 1; -- in the case that there is the same sentinel in 2 groups owned by the same user.
 	END
 	$BODY$;
