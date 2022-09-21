@@ -13,6 +13,7 @@ INSERT INTO data.users (auth0_id, user_name) VALUES
 
 INSERT INTO data.groups (group_name, user_id, risk_level_threshold) VALUES
 ('Highway 5', 1, 1),          -- BC MOTI:                   1
+('other highway', 1, 3),
 ('Infrastructures', 2, 1),    -- City of Merritt:           2
 ('Infrastructures', 3, 1),    -- City of Abbotsford:        3
 ('Pipelines Cluster 1', 4, 3); --Trans Mountain Corporation 4
@@ -199,11 +200,19 @@ VALUES
 (150, '1128584', 'VERNON SILVER STAR LODGE', 50.3599999999999994, -119.060000000000002, NULL, '0101000020E6100000A4703D0AD7C35DC0AE47E17A142E4940', 23.54492, 47.0898399, 53.1871185, 61.2239456, 67.3440628, 30.8749905, 61.7499809, 69.2915802, 79.0398788, 86.3219299, 1, 1970, 2022);
 UPDATE data.sentinels SET elevation_m = 300;
 
-INSERT INTO data.groups_sentinels (
-	group_id,
-	sentinel_id
-) VALUES
-(1, 47);
+
+INSERT INTO data.groups_sentinels (group_id,sentinel_id)
+VALUES
+(1,104),
+(2,104),
+(1,14),
+(1,100),
+(2,47),
+(3,116),
+(3,130),
+(3,5),
+(4,104),
+(4,41);
 
 INSERT INTO data.assets (
 	asset_name, 
@@ -222,11 +231,10 @@ INSERT INTO data.assets (
 	length_of_roads_m
 ) VALUES
 ('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 2, 0, 801900, 800000, 417), -- BC MOTI asset
+('Bottletop West', 'bridge', 2, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 2, 0, 801900, 800000, 417), -- BC MOTI asset
 ('kwinshatin cr culv', 'culvert', 1, 50.018529, -120.821957, ST_point(-120.821957,50.018529,4326), 8927602, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8927602), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8927602), 0, 0, 1000, 2000, 300), -- BC MOTI asset
 ('Godey Creek culv', 'culvert', 1, 50.085495, -120.751576, ST_point(-120.751576,50.085495,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 0, 0, 1500, 1200, 500), -- BC MOTI asset
-('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), 2, 0, 171180, 160282, 1500), -- City of Merritt asset
-('James Plant', 'wastewater treatment plant', 3, 49.110502, -122.322585,ST_point(-122.322585, 49.110502,4326), 9981920, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9981920), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9981920), 0, 0, 0, 0, 10000), -- City of Abbotsford asset
-('Existing pipeline facilities','segment 5 Kingsvale to Merritt', 4, 50.0167, -120.8508, ST_point(-120.8508,50.0167,4326), 9184965, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9184965), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=9184965), 2, 0, 701819,601718, 500);-- Tranmountain asset
+('City of Merritt Public Works Yard', 'wastewater treatment plant', 2, 50.114078, -120.801764,ST_point(-120.801764,50.114078,4326), 7948635, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=7948635), 2, 0, 171180, 160282, 1500); -- City of Merritt asset
 
 INSERT INTO data.climate_normals_1991_2020 (
 	watershed_feature_id,
@@ -281,19 +289,7 @@ INSERT INTO data.climate_normals_1991_2020 (
 (8927602,9,1,28.1428571428571),
 (8927602,10,1,42.5238095238095),
 (8927602,11,1,62.2857142857143),
-(8927602,12,1,64.3333333333333),
-(9981920,1,1,207),
-(9981920,2,1,151.285714285714),
-(9981920,3,1,149.142857142857),
-(9981920,4,1,126),
-(9981920,5,1,100.857142857143),
-(9981920,6,1,81),
-(9981920,7,1,51),
-(9981920,8,1,51.2857142857143),
-(9981920,9,1,78.5714285714286),
-(9981920,10,1,159.428571428571),
-(9981920,11,1,251.285714285714),
-(9981920,12,1,189.714285714286);
+(8927602,12,1,64.3333333333333);
 
 -- if any new assets are added, ensure they get randomized data
 INSERT INTO data.climate_normals_1991_2020 (
@@ -331,7 +327,7 @@ CROSS JOIN
 	FROM
 		data.climate_normals_1991_2020 
 	WHERE 
-		watershed_feature_id = 9981920 -- randomly chosen
+		watershed_feature_id = 8927602 -- randomly chosen
 ) seed;
 
 
@@ -355,8 +351,7 @@ INSERT INTO data.pf_grids_aep_rollup (
 (9184965,31.8337,63.6674,72.0612,83.1223,91.5545,100.078,111.513,40.0699,80.1397,90.5362,104.125,114.401,124.72,138.455),
 (7948635,30.136,60.2719,68.2122,78.6722,86.6433,94.6986,105.502,37.6893,75.3786,85.1484,97.9124,107.561,117.246,130.132),
 (8925604,22.1822,44.3645,50.1519,57.7537,63.5292,69.3521,77.1364,26.5369,53.0738,59.8725,68.7224,75.3861,82.0525,90.8871),
-(8927602,24.3403,48.6806,54.9034,63.0626,69.2506,75.478,83.788,29.552,59.1041,66.5163,76.1384,83.369,90.584,100.125),
-(9981920,26.4338,53,60,70,77,84,94,34,68,76,88,97,105,117);
+(8927602,24.3403,48.6806,54.9034,63.0626,69.2506,75.478,83.788,29.552,59.1041,66.5163,76.1384,83.369,90.584,100.125);
 
 -- if any new assets are added, ensure they get randomized data
 INSERT INTO data.pf_grids_aep_rollup (
@@ -426,7 +421,7 @@ CROSS JOIN
 	FROM
 		data.pf_grids_aep_rollup 
 	WHERE 
-		watershed_feature_id = 9981920 -- randomly chosen
+		watershed_feature_id = 8925604 -- randomly chosen
 ) seed;
 
 INSERT INTO data.assets_antecedant(

@@ -442,6 +442,7 @@ AS $BODY$
 	END
 $BODY$;
 
+
 CREATE OR REPLACE FUNCTION data.get_sentinel_storms_of_record
 	(in_sentinel_id integer, 
 	OUT sentinel_storms_of_record json)
@@ -456,10 +457,10 @@ AS $BODY$
 		json_build_object(
 		'station_name', sentinel.station_name,
 		'station_id', sentinel.station_id,
+		'duration', storm.storm_duration,
 		'start_date', storm.storm_start_date,
-		'end_date', storm.storm_start_date + storm.storm_duration * INTERVAL '1 day',
-		'magnitude', storm.storm_magnitude
-		)
+		'value', storm.storm_magnitude
+		) as historic_storms_data
 	FROM
 		data.sentinels_historic_storms storm
 	JOIN
@@ -1504,5 +1505,160 @@ OUT asset_data json
 		antecedent
 	CROSS JOIN
 		daily_forecast;
+	END
+	$BODY$;
+
+
+-- stored procedure for gettting sentinels by sentinel id 
+
+CREATE OR REPLACE FUNCTION data.get_sentinel_by_sentinel_id(
+in_user_id integer,
+in_sentinel_id integer,
+OUT sentinel_data json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	WITH buckets as(
+		SELECT
+			*
+		FROM 
+			data.get_sentinel_rainfall_bar_chart(in_sentinel_id)
+	),	return_periods as(
+		SELECT json_agg(b) as sentinel_return_periods
+		FROM(
+		SELECT
+			r.risk_level,
+		CASE 
+			WHEN r.risk_level = 1 then NULL
+			WHEN r.risk_level = 2 then hr24_5yr
+			WHEN r.risk_level = 3 then hr24_10yr
+			WHEN r.risk_level = 4 then hr24_50yr
+			WHEN r.risk_level = 5 then hr24_100yr
+		END AS lb24,
+		CASE 
+			WHEN r.risk_level = 1 then hr24_5yr
+			WHEN r.risk_level = 2 then hr24_10yr
+			WHEN r.risk_level = 3 then hr24_50yr
+			WHEN r.risk_level = 4 then hr24_100yr
+			WHEN r.risk_level = 5 then NULL
+		END AS ub24,
+		CASE 
+			WHEN r.risk_level = 1 then NULL
+			WHEN r.risk_level = 2 then hr48_5yr
+			WHEN r.risk_level = 3 then hr48_10yr
+			WHEN r.risk_level = 4 then hr48_50yr
+			WHEN r.risk_level = 5 then hr48_100yr
+		END AS lb48,
+		CASE 
+			WHEN r.risk_level = 1 then hr48_5yr
+			WHEN r.risk_level = 2 then hr48_10yr
+			WHEN r.risk_level = 3 then hr48_50yr
+			WHEN r.risk_level = 4 then hr48_100yr
+			WHEN r.risk_level = 5 then NULL
+		END AS ub48
+		FROM
+			data.sentinels a
+			cross join
+			data.risk_levels r
+		WHERE
+			a.sentinel_id = in_sentinel_id) b
+	),	risk as (
+		SELECT 
+			sentinel_id,
+			max(risk_level) as risk_level 
+		FROM 
+			data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id) 
+		group by 
+			sentinel_id
+	),	daily_forecast as(
+		SELECT
+			*
+		FROM
+			data.get_sentinel_calendar_day_table(in_sentinel_id)
+	), historical_storms as(
+		SELECT
+			json_agg(sentinel_storms_of_record) as sentinel_storms_of_record
+		FROM
+			data.get_sentinel_storms_of_record(in_sentinel_id)
+	), one_day_forecast_storm as(
+		SELECT 
+			dt,
+			one_day,
+			risk_level_one_day
+		FROM 
+			data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id)
+		ORDER BY 
+			one_day DESC
+		LIMIT 1
+	), two_day_forecast_storm as(
+		SELECT
+			dt,
+			two_day,
+			risk_level_two_day
+		FROM
+			data.get_sentinel_one_and_two_day_current_forecast_risk_level(in_sentinel_id)
+		ORDER BY
+			two_day DESC
+		LIMIT 1
+	)
+	SELECT 
+		json_build_object(
+			'id', sentinel.sentinel_id,
+			'name', sentinel.station_name,
+			'riskLevel', risk.risk_level,
+			'elevationsMasl', sentinel.elevation_m,
+			'nativeId',sentinel.station_id,
+			'networkName', network.network_name,
+			'location', st_AsGeojson(sentinel.geom4326),
+			'forecastDaily', daily_forecast.daily_forecast,
+			'forecast3hour', buckets.bar_chart_data,
+			'yearsOfRecord', json_build_object('start',sentinel.start_year,'end',sentinel.end_year),
+			'returnPeriods', return_periods.sentinel_return_periods,
+			'forecastStorms', json_build_object('one_day',json_build_object('date',one_day_forecast_storm.dt,'duration', 1, 'value',one_day_forecast_storm.one_day,'risk_level',one_day_forecast_storm.risk_level_one_day),
+											   'two_day',json_build_object('date',two_day_forecast_storm.dt,'duration', 2, 'value',two_day_forecast_storm.two_day, 'risk_level',two_day_forecast_storm.risk_level_two_day)),
+			'historicalStorms',historical_storms.sentinel_storms_of_record,
+			'changeFromPreviousForecast', daily_forecast.change_from_previous_forecast
+			)
+	FROM
+		data.sentinels sentinel
+	JOIN
+		risk
+	USING
+		(sentinel_id)
+	JOIN
+		data.groups_sentinels groups_sentinels
+	USING
+		(sentinel_id)
+	JOIN
+		data.groups groups
+	USING
+		(group_id)
+	JOIN
+		(SELECT * FROM data.users where user_id = in_user_id) u
+	using
+		(user_id)
+	CROSS JOIN 
+		buckets
+	CROSS JOIN
+		return_periods
+	CROSS JOIN
+		historical_storms
+	CROSS JOIN
+		daily_forecast
+	CROSS JOIN
+		one_day_forecast_storm
+	CROSS JOIN
+		two_day_forecast_storm
+	JOIN
+		data.networks network
+	USING 
+		(network_id)
+	LIMIT 1; -- in the case that there is the same sentinel in 2 groups owned by the same user.
 	END
 	$BODY$;
