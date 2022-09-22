@@ -88,7 +88,7 @@ CREATE TABLE data.sentinels
 	station_name VARCHAR(50),
 	latitude double precision,
 	longitude double precision,
-	elevation_m double precision,
+	elevation_m double precision DEFAULT -1,
 	geom4326 geometry(Point, 4326),
 	hr24_5yr real NOT NULL, --Sina needs to populate this
 	hr24_10yr real NOT NULL,
@@ -150,9 +150,9 @@ CREATE TABLE data.assets
 	length_of_roads_m double precision NOT NULL,  --contributes to land_disturbance_road when combined with aoi_area_m2
 	time_zone varchar(50),
 	created timestamp with time zone NOT NULL default now(),
-	aoi_elev_max_m double precision NOT NULL,
-	aoi_elev_mean_m double precision NOT NULL,
-	aoi_elev_min_m double precision NOT NULL,
+	aoi_elev_max_m double precision DEFAULT -1,
+	aoi_elev_mean_m double precision DEFAULT -1,
+	aoi_elev_min_m double precision DEFAULT -1,
 	metadata json
 );
 
