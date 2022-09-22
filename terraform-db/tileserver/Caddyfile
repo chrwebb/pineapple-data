@@ -1,0 +1,6 @@
+pg-tileserver-cg.canadacentral.azurecontainer.io
+
+reverse_proxy pg-tileserver-cg.canadacentral.azurecontainer.io {
+	to pg-tileserver-cg.canadacentral.azurecontainer.io:7800
+	header_down Access-Control-Allow-Origin "*"
+}
