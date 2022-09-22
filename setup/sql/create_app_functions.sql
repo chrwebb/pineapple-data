@@ -81,7 +81,7 @@ AS $BODY$
 CREATE OR REPLACE FUNCTION data.asset_current_forecast_made_at 
 (
 	in_asset_id integer,
-	OUT previous_forecast_made_at timestamp with time zone 
+	OUT current_forecast_made_at timestamp with time zone 
 )
 	RETURNS SETOF timestamp with time zone
 	LANGUAGE 'plpgsql'
@@ -108,7 +108,7 @@ AS $BODY$
 CREATE OR REPLACE FUNCTION data.sentinel_current_forecast_made_at 
 (
 	in_sentinel_id integer,
-	OUT previous_forecast_made_at timestamp with time zone 
+	OUT current_forecast_made_at timestamp with time zone 
 )
 	RETURNS SETOF timestamp with time zone
 	LANGUAGE 'plpgsql'
@@ -1701,5 +1701,208 @@ OUT sentinels_in_group json
 		sentinels s
 	CROSS JOIN
 		data.get_sentinel_by_sentinel_id(s.user_id,s.sentinel_id) b;
+	END
+	$BODY$;
+
+-- stored procedure for getting assets in one group 
+
+CREATE OR REPLACE FUNCTION data.get_assets_by_group_id(
+in_user_id integer,
+in_group_id integer,
+OUT assets_in_group json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	WITH assets as (
+	SELECT 
+		user_id,
+		asset_id
+	FROM 
+		data.assets
+	JOIN
+		data.groups
+	using
+		(group_id)
+	JOIN
+		(SELECT user_id FROM data.users WHERE user_id = in_user_id) u
+	USING 
+		(user_id)
+	WHERE
+		group_id = in_group_id
+	)
+	SELECT
+		json_agg(b.*)
+	FROM
+		assets s
+	CROSS JOIN
+		data.get_asset_by_asset_id(s.user_id,s.asset_id) b;
+	END
+	$BODY$;
+
+-- stored procedure for finding risk per group (combined risk for assets and sentinels)
+CREATE OR REPLACE FUNCTION data.get_group_risk(
+in_user_id integer,
+in_group_id integer,
+OUT risk_level integer
+)
+	RETURNS SETOF integer
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	WITH assets as (
+		SELECT 
+			user_id,
+			asset_id
+		FROM 
+			data.assets
+		JOIN
+			data.groups
+		using
+			(group_id)
+		JOIN
+			(SELECT user_id FROM data.users WHERE user_id = in_user_id) u
+		USING 
+			(user_id)
+		WHERE
+			group_id = in_group_id
+		), sentinels as(
+			SELECT 
+			user_id,
+			sentinel_id
+		FROM 
+			data.groups_sentinels
+		JOIN
+			data.groups
+		using
+			(group_id)
+		JOIN
+			(SELECT user_id FROM data.users WHERE user_id = in_user_id) u
+		USING 
+			(user_id)
+		WHERE
+			group_id = in_group_id
+		), assets_risk as(
+			SELECT 
+				max(a.risk_level) 
+			FROM
+				assets
+			CROSS JOIN
+				data.get_asset_one_and_two_day_current_forecast_risk_level(assets.asset_id) a
+		), sentinels_risk as(
+			SELECT 
+				max(b.risk_level) 
+			FROM
+				sentinels
+			CROSS JOIN
+				data.get_sentinel_one_and_two_day_current_forecast_risk_level(sentinels.sentinel_id) b
+		)
+		SELECT
+			GREATEST(sentinels_risk.max,assets_risk.max) as risk_level
+		FROM
+			sentinels_risk
+		CROSS JOIN
+			assets_risk;
+		END
+		$BODY$;
+		
+-- stored procedure for finding groups by id 
+
+CREATE OR REPLACE FUNCTION data.get_group_by_id(
+in_user_id integer,
+in_group_id integer,
+OUT group_info json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	SELECT
+		json_build_object(
+		'id',a.group_id,
+		'name',a.group_name,
+		'risk',b.risk_level,
+		'assets',c.assets_in_group,
+		'sentinels',d.sentinels_in_group
+		)
+	FROM
+		data.groups a 
+	CROSS JOIN
+		 data.get_group_risk(in_user_id,in_group_id) b
+	CROSS JOIN
+		data.get_assets_by_group_id(in_user_id,in_group_id) c
+	CROSS JOIN
+		data.get_sentinels_by_group_id (in_user_id, in_group_id) d	
+	WHERE
+		a.group_id = in_group_id;
+	END
+	$BODY$;
+
+-- stored procedure for finding groups by user id 
+
+CREATE OR REPLACE FUNCTION data.get_groups_by_user_id(
+in_user_id integer,
+OUT groups_for_user json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	WITH groups_for_user as(
+	SELECT
+		user_id,
+		group_id
+	FROM
+		data.groups
+	WHERE
+		user_id = in_user_id
+	)
+	SELECT
+		json_agg(b.*)
+	FROM
+		groups_for_user
+	CROSS JOIN
+		data.get_group_by_id(groups_for_user.user_id,groups_for_user.group_id) b;
+	END
+	$BODY$;
+
+-- stored procedure for forecast info 
+
+CREATE OR REPLACE FUNCTION data.get_forecast_info(
+in_asset_id integer,
+OUT forecast_info json
+)
+	RETURNS SETOF json
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	SELECT
+		json_build_object(
+		'currentForecastDatetime', current_forecast_made_at,
+		'nextForecastDatetime',current_forecast_made_at + INTERVAL '12 hour'
+		)
+	FROM
+		data.asset_current_forecast_made_at (in_asset_id);
 	END
 	$BODY$;
