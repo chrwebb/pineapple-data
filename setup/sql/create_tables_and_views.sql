@@ -88,7 +88,7 @@ CREATE TABLE data.sentinels
 	station_name VARCHAR(50),
 	latitude double precision,
 	longitude double precision,
-	elevation_m double precision,
+	elevation_m double precision DEFAULT -1,
 	geom4326 geometry(Point, 4326),
 	hr24_5yr real NOT NULL, --Sina needs to populate this
 	hr24_10yr real NOT NULL,
@@ -103,7 +103,8 @@ CREATE TABLE data.sentinels
 	network_id integer references data.networks, -- TBD: Relate to a network table
 	start_year smallint, -- Relates to precip
 	end_year smallint, -- Relates to precip
-	time_zone varchar(50)
+	time_zone varchar(50),
+	metadata json
 );
 
 
@@ -148,7 +149,11 @@ CREATE TABLE data.assets
 	fire_past_5_years_m2 double precision NOT NULL , --contributes to land_disturbance_fire when combined with aoi_area_m2
 	length_of_roads_m double precision NOT NULL,  --contributes to land_disturbance_road when combined with aoi_area_m2
 	time_zone varchar(50),
-	created timestamp with time zone NOT NULL default now()
+	created timestamp with time zone NOT NULL default now(),
+	aoi_elev_max_m double precision DEFAULT -1,
+	aoi_elev_mean_m double precision DEFAULT -1,
+	aoi_elev_min_m double precision DEFAULT -1,
+	metadata json
 );
 
 
