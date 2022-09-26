@@ -229,9 +229,9 @@ INSERT INTO data.assets (
 	watershed_feature_id, 
 	aoi_geom4326,
 	aoi_area_m2,
-    aoi_elev_max_m,
-    aoi_elev_mean_m,
-    aoi_elev_min_m
+	aoi_elev_max_m,
+	aoi_elev_mean_m,
+	aoi_elev_min_m
 ) VALUES
 ('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 123.1, 123.1, 123.1), -- BC MOTI asset
 ('Bottletop West', 'bridge', 2, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 123.1, 123.1, 123.1), -- BC MOTI asset
