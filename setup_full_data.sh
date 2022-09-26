@@ -36,8 +36,6 @@ function watershed_elevation {
 }
 
 function climate_normals {
-	rm ./data/PPT*
-
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT01.tif
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT02.tif
 	wget -P ./data/ climatena.ca/rasterFiles/WNA/800m/Normal_1991_2020MSY/PPT03.tif
@@ -65,8 +63,6 @@ function climate_normals {
 	raster2pgsql -d -C -s 4326 -t 100x100 ./data/PPT12.tif data.climate_normals_ppt12 | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
 
 	rm ./data/PPT*
-
-	python3 setup/python/watershed_centroid_precip.py
 }
 
 main "$@"
