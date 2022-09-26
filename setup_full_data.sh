@@ -33,6 +33,15 @@ function watershed_elevation {
 	raster2pgsql -d -C -s EPSG:4326 -t 1000x1000 ./data/dem_4326.tif data.dem_bc | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
 	rm data/pub.data.gov.bc.ca -r
 	rm data/dem*
+
+	wget https://prd-tnm.s3.amazonaws.com/StagedProducts/Hydrography/NHDPlusHR/Beta/GDB/NHDPLUS_H_1711_HU4_RASTER.7z -P data/
+	7z -odata/ x data/NHDPLUS_H_1711_HU4_RASTER.7z
+	gdalwarp -s_srs EPSG:42303 -t_srs EPSG:4326 data/HRNHDPlusRasters1711/elev_cm.tif data/elev_cm_4326.tif
+	raster2pgsql -a -C -s EPSG:4326 -t 1000x1000 ./data/elev_cm_4326.tif data.dem_bc | psql postgresql://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE
+	rm data/elev_cm_4326.tif
+	rm data/NHDPLUS_H_1711_HU4_RASTER.zip
+	rm data/HRNHDPlusRasters1711/ -r
+
 }
 
 function climate_normals {
