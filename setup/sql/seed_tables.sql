@@ -206,19 +206,6 @@ VALUES
 UPDATE data.sentinels SET elevation_m = 300;
 
 
-INSERT INTO data.groups_sentinels (group_id,sentinel_id)
-VALUES
-(1,104),
-(2,104),
-(1,14),
-(1,100),
-(2,47),
-(3,116),
-(3,130),
-(3,5),
-(4,104),
-(4,41);
-
 INSERT INTO data.assets (
 	asset_name, 
 	asset_description, 
@@ -260,7 +247,32 @@ INSERT INTO data.assets (
 -- ('Juliet Creek', 'pipeline', 5, 49.7405022475876,-121.011633591838, 8926647),
 -- ('Salem Creek', 'pipeline', 5, 49.985086820893,-120.916494509577, 8925695),
 -- ('Two Fan Debris Flow', 'pipeline', 6, 49.3636356012764,-121.547625952114, 10383688);
-
+	
+WITH buffer AS (
+	SELECT
+		group_id,
+		ST_UNION(ST_BUFFER(geom4326::geography,5000)::geometry) buffer4326
+	FROM
+		data.assets
+	GROUP BY
+		group_id
+)
+INSERT INTO data.groups_sentinels (
+	group_id,
+	sentinel_id
+) 
+SELECT
+	buffer.group_id,
+	sent.sentinel_id
+FROM
+	data.sentinels sent
+LEFT JOIN
+	buffer
+ON 
+	ST_INTERSECTS(sent.geom4326, buffer.buffer4326)
+WHERE
+	group_id IS NOT NULL;
+	
 
 INSERT INTO data.climate_normals_1991_2020 (
 	watershed_feature_id,
