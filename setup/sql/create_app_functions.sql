@@ -692,35 +692,35 @@ AS $BODY$
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN per24_48.one_day <= hr24_5yr THEN 1
-				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN per24_48.one_day > hr24_100yr THEN 5
+				WHEN (per24_48.one_day * 1.13) <= hr24_5yr THEN 1
+				WHEN (per24_48.one_day * 1.13) > hr24_5yr AND (per24_48.one_day * 1.13) <= hr24_10yr THEN 2
+				WHEN (per24_48.one_day * 1.13) > hr24_10yr AND (per24_48.one_day * 1.13) <= hr24_50yr THEN 3
+				WHEN (per24_48.one_day * 1.13) > hr24_50yr AND (per24_48.one_day * 1.13) <= hr24_100yr THEN 4
+				WHEN (per24_48.one_day * 1.13) > hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN per24_48.two_day <= hr48_5yr THEN 1
-				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN per24_48.two_day > hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.04) <= hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.04) > hr48_5yr AND (per24_48.two_day*1.04) <= hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.04) > hr48_10yr AND (per24_48.two_day*1.04) <= hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.04) > hr48_50yr AND (per24_48.two_day*1.04) <= hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.04) > hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN per24_48.one_day <= hr24_5yr THEN 1
-				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN per24_48.one_day > hr24_100yr THEN 5
+				WHEN (per24_48.one_day*1.13) <= hr24_5yr THEN 1
+				WHEN (per24_48.one_day*1.13) > hr24_5yr AND (per24_48.one_day*1.13) <= hr24_10yr THEN 2
+				WHEN (per24_48.one_day*1.13) > hr24_10yr AND (per24_48.one_day*1.13) <= hr24_50yr THEN 3
+				WHEN (per24_48.one_day*1.13) > hr24_50yr AND (per24_48.one_day*1.13) <= hr24_100yr THEN 4
+				WHEN (per24_48.one_day*1.13) > hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN per24_48.two_day <= hr48_5yr THEN 1
-				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN per24_48.two_day > hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.13) <= hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.13) > hr48_5yr AND (per24_48.two_day*1.13) <= hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.13) > hr48_10yr AND (per24_48.two_day*1.13) <= hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.13) > hr48_50yr AND (per24_48.two_day*1.13) <= hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.13) > hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
@@ -795,35 +795,35 @@ SELECT
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN per24_48.one_day <= hr24_5yr THEN 1
-				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN per24_48.one_day > hr24_100yr THEN 5
+				WHEN (per24_48.one_day*1.13) <= hr24_5yr THEN 1
+				WHEN (per24_48.one_day*1.13) > hr24_5yr AND (per24_48.one_day*1.13) <= hr24_10yr THEN 2
+				WHEN (per24_48.one_day*1.13) > hr24_10yr AND (per24_48.one_day*1.13) <= hr24_50yr THEN 3
+				WHEN (per24_48.one_day*1.13) > hr24_50yr AND (per24_48.one_day*1.13) <= hr24_100yr THEN 4
+				WHEN (per24_48.one_day*1.13) > hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN per24_48.two_day <= hr48_5yr THEN 1
-				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN per24_48.two_day > hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.04) <= hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.04) > hr48_5yr AND (per24_48.two_day*1.04) <= hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.04) > hr48_10yr AND (per24_48.two_day*1.04) <= hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.04) > hr48_50yr AND (per24_48.two_day*1.04) <= hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.04) > hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN per24_48.one_day <= hr24_5yr THEN 1
-				WHEN per24_48.one_day > hr24_5yr AND per24_48.one_day <= hr24_10yr THEN 2
-				WHEN per24_48.one_day > hr24_10yr AND per24_48.one_day <= hr24_50yr THEN 3
-				WHEN per24_48.one_day > hr24_50yr AND per24_48.one_day <= hr24_100yr THEN 4
-				WHEN per24_48.one_day > hr24_100yr THEN 5
+				WHEN (per24_48.one_day*1.13) <= hr24_5yr THEN 1
+				WHEN (per24_48.one_day*1.13) > hr24_5yr AND (per24_48.one_day*1.13) <= hr24_10yr THEN 2
+				WHEN (per24_48.one_day*1.13) > hr24_10yr AND (per24_48.one_day*1.13) <= hr24_50yr THEN 3
+				WHEN (per24_48.one_day*1.13) > hr24_50yr AND (per24_48.one_day*1.13) <= hr24_100yr THEN 4
+				WHEN (per24_48.one_day*1.13) > hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN per24_48.two_day <= hr48_5yr THEN 1
-				WHEN per24_48.two_day > hr48_5yr AND per24_48.two_day <= hr48_10yr THEN 2
-				WHEN per24_48.two_day > hr48_10yr AND per24_48.two_day <= hr48_50yr THEN 3
-				WHEN per24_48.two_day > hr48_50yr AND per24_48.two_day <= hr48_100yr THEN 4
-				WHEN per24_48.two_day > hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.04) <= hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.04) > hr48_5yr AND (per24_48.two_day*1.04) <= hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.04) > hr48_10yr AND (per24_48.two_day*1.04) <= hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.04) > hr48_50yr AND (per24_48.two_day*1.04) <= hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.04) > hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
@@ -915,35 +915,35 @@ AS $BODY$
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN (per24_48.one_day*1.13) <= per_day.hr24_5yr THEN 1
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_5yr AND (per24_48.one_day*1.13) <= per_day.hr24_10yr THEN 2
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_10yr AND (per24_48.one_day*1.13) <= per_day.hr24_50yr THEN 3
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_50yr AND (per24_48.one_day*1.13) <= per_day.hr24_100yr THEN 4
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.04) <= per_day.hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_5yr AND (per24_48.two_day*1.04) <= per_day.hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_10yr AND (per24_48.two_day*1.04) <= per_day.hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_50yr AND (per24_48.two_day*1.04) <= per_day.hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN (per24_48.one_day*1.13) <= per_day.hr24_5yr THEN 1
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_5yr AND (per24_48.one_day*1.13) <= per_day.hr24_10yr THEN 2
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_10yr AND (per24_48.one_day*1.13) <= per_day.hr24_50yr THEN 3
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_50yr AND (per24_48.one_day*1.13) <= per_day.hr24_100yr THEN 4
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.04) <= per_day.hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_5yr AND (per24_48.two_day*1.04) <= per_day.hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_10yr AND (per24_48.two_day*1.04) <= per_day.hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_50yr AND (per24_48.two_day*1.04) <= per_day.hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
@@ -1035,35 +1035,35 @@ SELECT
 				per24_48.one_day,
 				per24_48.two_day,
 			CASE
-				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN (per24_48.one_day*1.13) <= per_day.hr24_5yr THEN 1
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_5yr AND (per24_48.one_day*1.13) <= per_day.hr24_10yr THEN 2
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_10yr AND (per24_48.one_day*1.13) <= per_day.hr24_50yr THEN 3
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_50yr AND (per24_48.one_day*1.13) <= per_day.hr24_100yr THEN 4
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_100yr THEN 5
 			END AS
 			risk_level_one_day,
 			CASE
-				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.04) <= per_day.hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_5yr AND (per24_48.two_day*1.04) <= per_day.hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_10yr AND (per24_48.two_day*1.04) <= per_day.hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_50yr AND (per24_48.two_day*1.04) <= per_day.hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_100yr THEN 5
 			END AS
 			risk_level_two_day,
 			GREATEST(
 			CASE
-				WHEN per24_48.one_day <= per_day.hr24_5yr THEN 1
-				WHEN per24_48.one_day > per_day.hr24_5yr AND per24_48.one_day <= per_day.hr24_10yr THEN 2
-				WHEN per24_48.one_day > per_day.hr24_10yr AND per24_48.one_day <= per_day.hr24_50yr THEN 3
-				WHEN per24_48.one_day > per_day.hr24_50yr AND per24_48.one_day <= per_day.hr24_100yr THEN 4
-				WHEN per24_48.one_day > per_day.hr24_100yr THEN 5
+				WHEN (per24_48.one_day*1.13) <= per_day.hr24_5yr THEN 1
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_5yr AND (per24_48.one_day*1.13) <= per_day.hr24_10yr THEN 2
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_10yr AND (per24_48.one_day*1.13) <= per_day.hr24_50yr THEN 3
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_50yr AND (per24_48.one_day*1.13) <= per_day.hr24_100yr THEN 4
+				WHEN (per24_48.one_day*1.13) > per_day.hr24_100yr THEN 5
 				END, 
 			CASE
-				WHEN per24_48.two_day <= per_day.hr48_5yr THEN 1
-				WHEN per24_48.two_day > per_day.hr48_5yr AND per24_48.two_day <= per_day.hr48_10yr THEN 2
-				WHEN per24_48.two_day > per_day.hr48_10yr AND per24_48.two_day <= per_day.hr48_50yr THEN 3
-				WHEN per24_48.two_day > per_day.hr48_50yr AND per24_48.two_day <= per_day.hr48_100yr THEN 4
-				WHEN per24_48.two_day > per_day.hr48_100yr THEN 5
+				WHEN (per24_48.two_day*1.04) <= per_day.hr48_5yr THEN 1
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_5yr AND (per24_48.two_day*1.04) <= per_day.hr48_10yr THEN 2
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_10yr AND (per24_48.two_day*1.04) <= per_day.hr48_50yr THEN 3
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_50yr AND (per24_48.two_day*1.04) <= per_day.hr48_100yr THEN 4
+				WHEN (per24_48.two_day*1.04) > per_day.hr48_100yr THEN 5
 			END) as risk_level
 			from
 				per24_48
