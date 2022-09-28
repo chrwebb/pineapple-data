@@ -14,12 +14,12 @@ INSERT INTO data.users (auth0_id, user_name) VALUES
 
 INSERT INTO data.groups (group_name, user_id, risk_level_threshold) VALUES
 ('Highway 5', 1, 1),          -- BC MOTI:                   1
-('other highway', 1, 3),
-('Infrastructures', 2, 1),    -- City of Merritt:           2
-('Infrastructures', 3, 1),    -- City of Abbotsford:        3
-('Pipelines Cluster 1', 4, 3), --Trans Mountain Corporation 4
-('Trans Mountain Pipeline ULC East of Coquihalla Summit', 5, 3), --5
-('Trans Mountain Pipeline ULC West of Coquihalla Summit', 5, 3); --6
+('other highway', 1, 3),      -- BC MOTI:                   2
+('Infrastructures', 2, 1),    -- City of Merritt:           3
+('Infrastructures', 3, 1),    -- City of Abbotsford:        4
+('Pipelines Cluster 1', 4, 3), --Trans Mountain Corporation 5
+('Trans Mountain Pipeline ULC East of Coquihalla Summit', 5, 3), --6
+('Trans Mountain Pipeline ULC West of Coquihalla Summit', 5, 3); --7
 
 
 INSERT INTO data.networks (network_name, network_name_long) VALUES
@@ -216,9 +216,9 @@ INSERT INTO data.assets (
 	watershed_feature_id, 
 	aoi_geom4326,
 	aoi_area_m2,
-    aoi_elev_max_m,
-    aoi_elev_mean_m,
-    aoi_elev_min_m
+	aoi_elev_max_m,
+	aoi_elev_mean_m,
+	aoi_elev_min_m
 ) VALUES
 ('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 123.1, 123.1, 123.1), -- BC MOTI asset
 ('Bottletop West', 'bridge', 2, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 123.1, 123.1, 123.1), -- BC MOTI asset
@@ -367,7 +367,6 @@ CROSS JOIN
 	WHERE 
 		watershed_feature_id = 8927602 -- randomly chosen
 ) seed;
-
 
 INSERT INTO data.pf_grids_aep_rollup (
 	watershed_feature_id,
