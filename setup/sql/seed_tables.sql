@@ -14,12 +14,12 @@ INSERT INTO data.users (auth0_id, user_name) VALUES
 
 INSERT INTO data.groups (group_name, user_id, risk_level_threshold) VALUES
 ('Highway 5', 1, 1),          -- BC MOTI:                   1
-('other highway', 1, 3),
-('Infrastructures', 2, 1),    -- City of Merritt:           2
-('Infrastructures', 3, 1),    -- City of Abbotsford:        3
-('Pipelines Cluster 1', 4, 3), --Trans Mountain Corporation 4
-('Trans Mountain Pipeline ULC East of Coquihalla Summit', 5, 3), --5
-('Trans Mountain Pipeline ULC West of Coquihalla Summit', 5, 3); --6
+('other highway', 1, 3),      -- BC MOTI:                   2
+('Infrastructures', 2, 1),    -- City of Merritt:           3
+('Infrastructures', 3, 1),    -- City of Abbotsford:        4
+('Pipelines Cluster 1', 4, 3), --Trans Mountain Corporation 5
+('Trans Mountain Pipeline ULC East of Coquihalla Summit', 5, 3), --6
+('Trans Mountain Pipeline ULC West of Coquihalla Summit', 5, 3); --7
 
 
 INSERT INTO data.networks (network_name, network_name_long) VALUES
@@ -206,19 +206,6 @@ VALUES
 UPDATE data.sentinels SET elevation_m = 300;
 
 
-INSERT INTO data.groups_sentinels (group_id,sentinel_id)
-VALUES
-(1,104),
-(2,104),
-(1,14),
-(1,100),
-(2,47),
-(3,116),
-(3,130),
-(3,5),
-(4,104),
-(4,41);
-
 INSERT INTO data.assets (
 	asset_name, 
 	asset_description, 
@@ -229,9 +216,9 @@ INSERT INTO data.assets (
 	watershed_feature_id, 
 	aoi_geom4326,
 	aoi_area_m2,
-    aoi_elev_max_m,
-    aoi_elev_mean_m,
-    aoi_elev_min_m
+	aoi_elev_max_m,
+	aoi_elev_mean_m,
+	aoi_elev_min_m
 ) VALUES
 ('Bottletop West', 'bridge', 1, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 123.1, 123.1, 123.1), -- BC MOTI asset
 ('Bottletop West', 'bridge', 2, 49.760952 , -121.001396, ST_point(-121.001396,49.760952,4326), 8925604, (SELECT geom4326 FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), (SELECT ST_Area(geom4326::geography) FROM staging.freshwater_atlas_upstream WHERE watershed_feature_id=8925604), 123.1, 123.1, 123.1), -- BC MOTI asset
@@ -260,7 +247,32 @@ INSERT INTO data.assets (
 -- ('Juliet Creek', 'pipeline', 5, 49.7405022475876,-121.011633591838, 8926647),
 -- ('Salem Creek', 'pipeline', 5, 49.985086820893,-120.916494509577, 8925695),
 -- ('Two Fan Debris Flow', 'pipeline', 6, 49.3636356012764,-121.547625952114, 10383688);
-
+	
+WITH buffer AS (
+	SELECT
+		group_id,
+		ST_UNION(ST_BUFFER(geom4326::geography,5000)::geometry) buffer4326
+	FROM
+		data.assets
+	GROUP BY
+		group_id
+)
+INSERT INTO data.groups_sentinels (
+	group_id,
+	sentinel_id
+) 
+SELECT
+	buffer.group_id,
+	sent.sentinel_id
+FROM
+	data.sentinels sent
+LEFT JOIN
+	buffer
+ON 
+	ST_INTERSECTS(sent.geom4326, buffer.buffer4326)
+WHERE
+	group_id IS NOT NULL;
+	
 
 INSERT INTO data.climate_normals_1991_2020 (
 	watershed_feature_id,
