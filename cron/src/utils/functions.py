@@ -11,10 +11,13 @@
 import logging
 import inspect
 import os
-log_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'logs/app.log'))
+
+
 
 
 def setup_logging():
+	log_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'logs/app.log'))
+	os.makedirs(os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'logs')),exist_ok =True )
 	logger = logging.getLogger('forecasts')
 	logger.setLevel(logging.DEBUG)
 	fh = logging.FileHandler(log_file)
