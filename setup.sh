@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Run initial setup of required schemas
-psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/sql/create_schemas_and_extensions.sql
-psql postgres://$PGUSER:$PGPASSWORD@$PGHOST:$PGPORT/$PGDATABASE -v ON_ERROR_STOP=1 -f setup/sql/create_tables_and_views.sql
+psql -h $PGHOST -d $PGDATABASE -U $PGUSER -p $PGPORT -v ON_ERROR_STOP=1 -f setup/sql/create_schemas_and_extensions.sql
+psql -h $PGHOST -d $PGDATABASE -U $PGUSER -p $PGPORT -v ON_ERROR_STOP=1 -f setup/sql/create_tables_and_views.sql
 
 # wget, unzip and place in data folder
 # ogr2ogr to postgres
