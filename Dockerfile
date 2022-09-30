@@ -1,4 +1,4 @@
-FROM postgis/postgis:13-3.3
+FROM postgres:13.8
 
 COPY ./data ./data
 COPY ./setup ./setup
@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install -y \
     gdal-bin \
     p7zip-full \
     python3-pip \
-    libpq-dev
+    libpq-dev \
+    postgis
 
 RUN pip install bcdata
 RUN chmod +x setup.sh

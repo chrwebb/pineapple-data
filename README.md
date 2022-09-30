@@ -35,8 +35,8 @@ pip install bcdata
 export PGHOST=localhost
 export PGPORT=5432
 export PGDATABASE=pineapple
-export PGUSER=username
-export PGPASSWORD=password
+export PGUSER=postgres
+export PGPASSWORD=postgres
 export PGTILESERVER_PASSWORD=password
 ```
 			
