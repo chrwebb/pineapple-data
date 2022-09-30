@@ -49,15 +49,11 @@ CREATE TABLE data.pf_grids_aep_rollup
 	hr24_20yr real NOT NULL,
 	hr24_50yr real NOT NULL,
 	hr24_100yr real NOT NULL,
-	hr24_200yr real NOT NULL,
-	hr24_500yr real NOT NULL,
 	hr48_5yr real NOT NULL, --Sina needs to populate this
 	hr48_10yr real NOT NULL,
 	hr48_20yr real NOT NULL,
 	hr48_50yr real NOT NULL,
-	hr48_100yr real NOT NULL,
-	hr48_200yr real NOT NULL,
-	hr48_500yr real NOT NULL
+	hr48_100yr real NOT NULL
 );
 
 DROP TABLE IF EXISTS data.users CASCADE;
@@ -88,7 +84,7 @@ CREATE TABLE data.sentinels
 	station_name VARCHAR(50),
 	latitude double precision,
 	longitude double precision,
-	elevation_m double precision,
+	elevation_m double precision DEFAULT -1,
 	geom4326 geometry(Point, 4326),
 	hr24_5yr real NOT NULL, --Sina needs to populate this
 	hr24_10yr real NOT NULL,
@@ -103,7 +99,8 @@ CREATE TABLE data.sentinels
 	network_id integer references data.networks, -- TBD: Relate to a network table
 	start_year smallint, -- Relates to precip
 	end_year smallint, -- Relates to precip
-	time_zone varchar(50)
+	time_zone varchar(50),
+	metadata json
 );
 
 
@@ -142,13 +139,17 @@ CREATE TABLE data.assets
 	aoi_geom4326 geometry(MultiPolygon, 4326) NOT NULL,
 	aoi_area_m2 double precision NOT NULL,
 	aoi_type_id int  NOT NULL DEFAULT 1 references data.aoi_types,
-	land_disturbance_fire smallint NOT NULL , --must be 0, 1 or 2; triggers from fire_past_2_years_m2 or fire_past_5_years_m2
-	land_disturbance_road smallint NOT NULL , --must be 0, 1 or 2; triggers from length_of_roads_m
+	land_disturbance_fire smallint NOT NULL, --must be 0, 1 or 2; triggers from fire_past_2_years_m2 or fire_past_5_years_m2
+	land_disturbance_road smallint NOT NULL, --must be 0, 1 or 2; triggers from length_of_roads_m
 	fire_past_2_years_m2 double precision NOT NULL , --contributes to land_disturbance_road when combined with aoi_area_m2
 	fire_past_5_years_m2 double precision NOT NULL , --contributes to land_disturbance_fire when combined with aoi_area_m2
 	length_of_roads_m double precision NOT NULL,  --contributes to land_disturbance_road when combined with aoi_area_m2
 	time_zone varchar(50),
-	created timestamp with time zone NOT NULL default now()
+	created timestamp with time zone NOT NULL default now(),
+	aoi_elev_max_m double precision DEFAULT -1,
+	aoi_elev_mean_m double precision DEFAULT -1,
+	aoi_elev_min_m double precision DEFAULT -1,
+	metadata json
 );
 
 

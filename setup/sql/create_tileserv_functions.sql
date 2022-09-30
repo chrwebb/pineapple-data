@@ -151,3 +151,88 @@ STABLE
 PARALLEL SAFE;
 
 COMMENT ON FUNCTION data.sentinel_point_tiles_for_group IS 'Get tiled sentinel points for all sentinels in a single group';
+
+CREATE OR REPLACE
+FUNCTION data.sentinel_point_tiles_by_sentinel_id(z integer, x integer, y integer, in_sentinel_id integer)
+RETURNS bytea
+AS $$
+DECLARE
+    result bytea;
+BEGIN
+    WITH
+    args AS (
+      SELECT ST_TileEnvelope(z, x, y) AS geom
+    ),
+    mvtgeom AS (      
+      SELECT 
+        ST_AsMVTGeom(ST_Transform(t.geom4326, 3857), args.geom) AS geom,
+		t.sentinel_id,
+		t.station_id,
+		t.station_name,
+		max(risk.risk_level) as risk
+      FROM data.sentinels t
+		, args
+	  JOIN
+		data.get_sentinel_one_and_two_day_current_forecast_risk_level(t.sentinel_id) risk
+	  ON
+		risk.sentinel_id=sentinel_id
+	  WHERE 
+		ST_Intersects(ST_Transform(t.geom4326, 3857), args.geom)
+		AND
+		t.sentinel_id=in_sentinel_id
+	  GROUP BY t.sentinel_id, args.geom
+	)
+	SELECT ST_AsMVT(mvtgeom, 'default')
+	INTO result
+	FROM mvtgeom;
+	
+	RETURN result;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+
+COMMENT ON FUNCTION data.sentinel_point_tiles_by_sentinel_id IS 'Get tiled sentinel point for sentinel with input id';
+
+CREATE OR REPLACE
+FUNCTION data.asset_point_tiles_by_asset_id(z integer, x integer, y integer, in_asset_id integer)
+RETURNS bytea
+AS $$
+DECLARE
+    result bytea;
+BEGIN
+    WITH
+    args AS (
+      SELECT ST_TileEnvelope(z, x, y) AS geom
+    ),
+    mvtgeom AS (
+      SELECT 
+        ST_AsMVTGeom(ST_Transform(t.geom4326, 3857), args.geom) AS geom,
+		t.asset_name,
+		t.asset_id,
+		max(risk.risk_level) as risk
+      FROM data.assets t
+		JOIN
+		  data.get_asset_one_and_two_day_current_forecast_risk_level(t.asset_id) risk
+	  	ON
+		  risk.asset_id=t.asset_id
+        , args
+      WHERE 
+		ST_Intersects(ST_Transform(t.geom4326, 3857), args.geom)
+	  AND
+		t.asset_id=in_asset_id
+	  GROUP BY t.asset_id, args.geom
+	)
+	SELECT ST_AsMVT(mvtgeom, 'default')
+	INTO result
+	FROM mvtgeom;
+	
+	RETURN result;
+END;
+$$
+LANGUAGE 'plpgsql'
+STABLE
+PARALLEL SAFE;
+
+COMMENT ON FUNCTION data.asset_point_tiles_by_asset_id IS 'Get tiled asset point for asset with input id';

@@ -65,6 +65,110 @@ CREATE OR REPLACE FUNCTION data.fn_fire_road_update_event() RETURNS trigger AS
  $BODY$
 LANGUAGE plpgsql VOLATILE
 COST 100;  
+
+CREATE OR REPLACE FUNCTION data.fn_watershed_elev_update_event() RETURNS trigger AS
+  $BODY$  
+  BEGIN  
+  NEW.aoi_elev_max_m = 
+    CASE
+      WHEN (ST_SummaryStats(ST_Clip(ST_Union((SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))), NEW.aoi_geom4326))).max is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))
+      ELSE (ST_SummaryStats(ST_Clip(ST_Union((SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))), NEW.aoi_geom4326))).max
+    END; 
+  NEW.aoi_elev_mean_m = 
+    CASE
+      WHEN (ST_SummaryStats(ST_Clip(ST_Union((SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))), NEW.aoi_geom4326))).mean is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))
+      ELSE (ST_SummaryStats(ST_Clip(ST_Union((SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))), NEW.aoi_geom4326))).mean
+    END; 
+  NEW.aoi_elev_min_m = 
+    CASE
+      WHEN (ST_SummaryStats(ST_Clip(ST_Union((SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))), NEW.aoi_geom4326))).min is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))
+      ELSE (ST_SummaryStats(ST_Clip(ST_Union((SELECT ST_Union(rast) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.aoi_geom4326))), NEW.aoi_geom4326))).min
+    END; 
+  NEW.metadata='{"elev_masl_data_source": "Populated with DEM"}'::json;
+  RAISE NOTICE 'UPDATING aoi_elev_max_m, aoi_elev_min_m, aoi_elev_mean_m, metadata field for asset_id: %, asset_name: %, [%,%]' , NEW.asset_id, NEW.asset_name, NEW.latitude, NEW.longitude; 
+    RETURN NEW; 
+  END;
+ $BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+
+CREATE OR REPLACE FUNCTION data.fn_watershed_pf_grid_update_event() RETURNS trigger AS
+  $BODY$  
+  BEGIN  
+    INSERT INTO data.pf_grids_aep_rollup (
+      watershed_feature_id,
+      hr24_5yr,
+      hr24_10yr,
+      hr24_20yr,
+      hr24_50yr,
+      hr24_100yr,
+      hr48_5yr,
+      hr48_10yr,
+      hr48_20yr,
+      hr48_50yr,
+      hr48_100yr
+    ) SELECT
+      NEW.watershed_feature_id,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_24h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326))/2 FROM staging.pf_grids_10yr_24h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_24h)/2
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_24h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_10yr_24h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_24h)
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_20yr_24h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_20yr_24h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_20yr_24h)
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_50yr_24h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_50yr_24h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_50yr_24h)
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_100yr_24h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_100yr_24h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_100yr_24h)
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_48h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326))/2 FROM staging.pf_grids_10yr_48h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_48h)/2
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_48h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_10yr_48h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_10yr_48h)
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_20yr_48h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_20yr_48h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_20yr_48h)
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_50yr_48h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_50yr_48h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_50yr_48h)
+      END,
+      CASE
+        WHEN (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_100yr_48h) is Null THEN (SELECT ST_Value(rast, ST_Centroid(NEW.aoi_geom4326)) FROM staging.pf_grids_100yr_48h)
+        ELSE (SELECT (ST_SummaryStats(ST_Clip(rast,NEW.aoi_geom4326))).mean FROM staging.pf_grids_100yr_48h)
+      END
+    ON CONFLICT DO NOTHING;
+  RAISE NOTICE 'UPDATING pf_grids for watershed_feature_id %' , NEW.watershed_feature_id; 
+    RETURN NEW; 
+  END;
+ $BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+
+CREATE OR REPLACE FUNCTION data.fn_sentinel_elev_update_event() RETURNS trigger AS
+  $BODY$  
+  BEGIN
+  NEW.elevation_m=(SELECT ST_Value(rast, ST_Centroid(NEW.geom4326)) FROM data.dem_bc WHERE ST_Intersects(rast, NEW.geom4326));
+  NEW.metadata='{"elev_masl_data_source": "Populated with DEM"}'::json;
+  RAISE NOTICE 'UPDATING elevation_m, metadata field for station_name: %, station_name: %, [%,%]' , NEW.station_name, NEW.station_name, NEW.latitude, NEW.longitude; 
+    RETURN NEW; 
+  END;
+ $BODY$
+LANGUAGE plpgsql VOLATILE
+COST 100;
+
 -- triggers
 -- INSERT geo trigger
 DROP TRIGGER IF EXISTS assets_table_inserted_geo ON data.assets;
@@ -90,6 +194,43 @@ CREATE TRIGGER asset_table_insert_fire_road
   FOR EACH ROW
   EXECUTE PROCEDURE data.fn_fire_road_update_event();
 
+-- INSERT watershed elev asset trigger
+DROP TRIGGER IF EXISTS asset_table_insert_watershed_elev ON data.assets;
+CREATE TRIGGER asset_table_insert_watershed_elev
+  BEFORE INSERT ON data.assets
+  FOR EACH ROW
+  WHEN (NEW.aoi_elev_min_m=-1 OR NEW.aoi_elev_max_m=-1 OR NEW.aoi_elev_mean_m=-1)
+  EXECUTE PROCEDURE data.fn_watershed_elev_update_event();
+
+-- UPDATE watershed elev asset trigger
+DROP TRIGGER IF EXISTS asset_table_update_watershed_elev ON data.assets;
+CREATE TRIGGER asset_table_update_watershed_elev
+  BEFORE UPDATE OF 
+  aoi_geom4326
+  ON data.assets
+  FOR EACH ROW
+  WHEN (NEW.aoi_elev_min_m=-1 OR NEW.aoi_elev_max_m=-1 OR NEW.aoi_elev_mean_m=-1)
+  EXECUTE PROCEDURE data.fn_watershed_elev_update_event();
+
+
+-- INSERT sentinel elev asset trigger
+DROP TRIGGER IF EXISTS sentinel_table_insert_elev ON data.sentinels;
+CREATE TRIGGER sentinel_table_insert_elev
+  BEFORE INSERT ON data.sentinels
+  FOR EACH ROW
+  WHEN (NEW.elevation_m=-1)
+  EXECUTE PROCEDURE data.fn_sentinel_elev_update_event();
+
+-- UPDATE sentinel elev asset trigger
+DROP TRIGGER IF EXISTS sentinel_table_update_elev ON data.sentinels;
+CREATE TRIGGER sentinel_table_update_elev
+  BEFORE UPDATE OF 
+  geom4326
+  ON data.sentinels
+  FOR EACH ROW
+  WHEN (NEW.elevation_m=-1)
+  EXECUTE PROCEDURE data.fn_sentinel_elev_update_event();
+
 --INSERT timezone use trigger for assets table 
 DROP TRIGGER IF EXISTS asset_table_insert_timezone ON data.assets;
 CREATE TRIGGER asset_table_insert_timezone
@@ -103,3 +244,12 @@ CREATE TRIGGER sentinel_table_insert_timezone
   BEFORE INSERT ON data.sentinels
   FOR EACH ROW
   EXECUTE PROCEDURE data.sentinels_insert_timezone();
+
+--INSERT asset upstream pf grid values to pf_grids_aef_rollup table
+DROP TRIGGER IF EXISTS asset_table_insert_pf ON data.assets;
+CREATE TRIGGER asset_table_insert_pf
+  BEFORE INSERT ON data.assets
+  FOR EACH ROW
+  EXECUTE PROCEDURE data.fn_watershed_pf_grid_update_event();
+
+
