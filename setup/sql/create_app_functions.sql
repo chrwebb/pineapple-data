@@ -1912,7 +1912,7 @@ OUT forecast_info json
 CREATE OR REPLACE FUNCTION data.get_asset_geom_for_model(
 	in_asset_id integer,
 	in_model_name text,
-	OUT out_asset_geom geometry
+	OUT out_asset_geom geometry(MultiPolygon)
 )
 	RETURNS SETOF geometry
 	LANGUAGE 'plpgsql'
@@ -1923,7 +1923,7 @@ CREATE OR REPLACE FUNCTION data.get_asset_geom_for_model(
 	BEGIN
 		RETURN QUERY
 	SELECT
-		ST_Transform(asset.geom4326, (SELECT proj4text FROM spatial_ref_sys WHERE auth_name=in_model_name))
+		ST_Transform(asset.aoi_geom4326, (SELECT proj4text FROM spatial_ref_sys WHERE auth_name=in_model_name))
 	FROM 
 		data.assets asset
 	WHERE 
@@ -1937,7 +1937,7 @@ CREATE OR REPLACE FUNCTION data.get_asset_geom_for_model(
 CREATE OR REPLACE FUNCTION data.get_sentinel_geom_for_model(
 	in_sentinel_id integer,
 	in_model_name text,
-	OUT out_sentinel_geom geometry
+	OUT out_sentinel_geom geometry(Point)
 )
 	RETURNS SETOF geometry
 	LANGUAGE 'plpgsql'
