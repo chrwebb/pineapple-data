@@ -1906,3 +1906,53 @@ OUT forecast_info json
 		data.asset_current_forecast_made_at (in_asset_id);
 	END
 	$BODY$;
+
+-- stored procedure for transforming asset geom to model projection
+
+CREATE OR REPLACE FUNCTION data.get_asset_geom_for_model(
+	in_asset_id integer,
+	in_model_name text,
+	OUT out_asset_geom geometry(MultiPolygon)
+)
+	RETURNS SETOF geometry
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	SELECT
+		ST_Transform(asset.aoi_geom4326, (SELECT proj4text FROM spatial_ref_sys WHERE auth_name=in_model_name))
+	FROM 
+		data.assets asset
+	WHERE 
+		asset.asset_id=in_asset_id
+	;
+	END
+	$BODY$;
+
+-- stored procedure for transforming sentinel geom to model projection
+
+CREATE OR REPLACE FUNCTION data.get_sentinel_geom_for_model(
+	in_sentinel_id integer,
+	in_model_name text,
+	OUT out_sentinel_geom geometry(Point)
+)
+	RETURNS SETOF geometry
+	LANGUAGE 'plpgsql'
+	COST 100
+		VOLATILE
+		ROWS 1
+	AS $BODY$
+	BEGIN
+		RETURN QUERY
+	SELECT
+		ST_Transform(sentinel.geom4326, (SELECT proj4text FROM spatial_ref_sys WHERE auth_name=in_model_name))
+	FROM 
+		data.sentinels sentinel
+	WHERE 
+		sentinel.sentinel_id=in_sentinel_id
+	;
+	END
+	$BODY$;
