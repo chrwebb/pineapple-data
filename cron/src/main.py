@@ -6,6 +6,8 @@ setup_logging()
 
 processing.hrdps_etl()
 
+processing.nwm_etl()
+
 
 
 # import requests

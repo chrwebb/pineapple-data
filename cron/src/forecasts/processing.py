@@ -1,5 +1,6 @@
 # from ecmwf import et as ecmwf_et
 from forecasts.hrdps import et as hrdps_et
+from forecasts.nwm import et as nwm_et
 # from nwm import et as nwm_et
 
 
@@ -9,3 +10,8 @@ from forecasts.hrdps import et as hrdps_et
 
 def hrdps_etl():
 	hrdps_et.process()
+
+def nwm_etl():
+	nwm_et.process()
+
+	
