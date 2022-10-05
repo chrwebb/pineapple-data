@@ -14,4 +14,7 @@ def hrdps_etl():
 def nwm_etl():
 	nwm_et.process()
 
-	
+def nwm_transform(assets):
+	nwm_et.tranform_asset_forecast(assets)
+
+

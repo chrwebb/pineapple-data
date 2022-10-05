@@ -11,9 +11,12 @@
 import logging
 import inspect
 import os
+import pandas as pd
+import geopandas as gpd 
+from sqlalchemy import create_engine 
 
-
-
+db_connection_url = "***REMOVED***"
+con = create_engine(db_connection_url) 
 
 def setup_logging():
 	log_file = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'logs/app.log'))
@@ -29,3 +32,41 @@ def setup_logging():
 	ch.setFormatter(formatter)
 	logger.addHandler(fh)
 	logger.addHandler(ch)
+
+
+def get_assets_id_and_geom(db):
+
+	query = """
+	SELECT
+		asset.asset_id,
+		ST_Transform(asset.aoi_geom4326, (SELECT proj4text FROM spatial_ref_sys WHERE auth_name='nwm')) as geom
+	FROM 
+		data.assets asset
+		"""
+
+	# cursor = db.conn.cursor()
+	# cursor.execute(query)
+
+	# cols = [ i[0] for i in cursor.description]
+	# assets = pd.DataFrame(cursor.fetchall(), columns = cols)
+
+	assets = gpd.read_postgis(query,db.conn)
+	return assets
+
+
+def get_sentinels_id_and_geom(db):
+
+	query = """
+	SELECT
+		sentinel.sentinel_id,
+		ST_Transform(sentinel.geom4326, (SELECT proj4text FROM spatial_ref_sys WHERE auth_name='nwm')) as geom
+	FROM 
+		data.sentinels sentinel
+		"""
+
+	cursor = db.conn.cursor()
+	cursor.execute(query)
+
+	cols = [ i[0] for i in cursor.description]
+	sentinels = pd.DataFrame(cursor.fetchall(), columns = cols)
+	return sentinels

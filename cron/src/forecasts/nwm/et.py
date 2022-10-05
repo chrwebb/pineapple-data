@@ -5,7 +5,14 @@ from datetime import datetime
 import os
 import logging
 import numpy as np
-
+import pandas as pd
+import geopandas as gpd 
+import rioxarray
+import xarray as xr
+import h5netcdf
+from netCDF4 import Dataset
+from dask.diagnostics import ProgressBar
+import glob, os
 
 
 now = datetime.now()
@@ -73,4 +80,30 @@ def process():
             except Exception as er:
                 logger.error(str(er))
 
+def tranform_asset_forecast(assets):
+    print(assets.head())
+
+    path = 'forecasts/nwm/nwm_data/{}/00'.format(now.strftime("%Y_%m_%d_%H"))
+    print(path)
+
+    glob_pattern = os.path.join(path, '*.nc' )
+
+    try: 
+        dsx = xr.open_mfdataset(glob_pattern, engine='h5netcdf',decode_times=False,combine ='by_coords').load()
+        print(dsx)
+        dsx = dsx.rio.write_crs('esri:102001')
+
+        logger.info('opening multiple netCDF files')
+    except Exception as er:
+        logger.error(str(er))
+
+    results = []
+  
+    # basins = [gpd.x for x in assets['geom']]
+    # basins = [list(x.exterior.coords) for x in assets['geom']]
+    for index, row in assets.iterrows():
+
+        clipped = dsx.rio.clip(row['geom'],'esri:102001')
+        df = clipped.to_dataframe()
+        print(df)
 

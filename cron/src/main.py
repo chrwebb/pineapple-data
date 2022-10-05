@@ -1,13 +1,23 @@
 from forecasts import processing
 from utils.functions import setup_logging
-
-
+from database import db
+from utils.functions import get_assets_id_and_geom
+from utils.functions import get_sentinels_id_and_geom
 setup_logging()
 
-processing.hrdps_etl()
+# processing.hrdps_etl()
 
-processing.nwm_etl()
+# processing.nwm_etl()
 
+assets = get_assets_id_and_geom(db)
+# print(assets.head())
+
+sentinels = get_sentinels_id_and_geom(db)
+# print(sentinels.head())
+
+# processing.nwm_etl()
+
+processing.nwm_transform(assets)
 
 
 # import requests
