@@ -13,6 +13,12 @@ import h5netcdf
 from netCDF4 import Dataset
 from dask.diagnostics import ProgressBar
 import glob, os
+from shapely.geometry import mapping
+import shapely
+import warnings
+from shapely.errors import ShapelyDeprecationWarning
+warnings.filterwarnings("ignore", category=ShapelyDeprecationWarning) 
+
 
 
 now = datetime.now()
@@ -81,16 +87,16 @@ def process():
                 logger.error(str(er))
 
 def tranform_asset_forecast(assets):
-    print(assets.head())
+    # print(assets.head())
 
     path = 'forecasts/nwm/nwm_data/{}/00'.format(now.strftime("%Y_%m_%d_%H"))
-    print(path)
+    # print(path)
 
     glob_pattern = os.path.join(path, '*.nc' )
 
     try: 
-        dsx = xr.open_mfdataset(glob_pattern, engine='h5netcdf',decode_times=False,combine ='by_coords').load()
-        print(dsx)
+        dsx = xr.open_mfdataset(glob_pattern, engine='h5netcdf',decode_times=True,combine ='by_coords').load()
+        # print(dsx)
         dsx = dsx.rio.write_crs('esri:102001')
 
         logger.info('opening multiple netCDF files')
@@ -98,12 +104,62 @@ def tranform_asset_forecast(assets):
         logger.error(str(er))
 
     results = []
-  
-    # basins = [gpd.x for x in assets['geom']]
-    # basins = [list(x.exterior.coords) for x in assets['geom']]
-    for index, row in assets.iterrows():
 
+    for index, row in assets.iterrows():
+        print('asset: {}'.format(row['asset_id']))
         clipped = dsx.rio.clip(row['geom'],'esri:102001')
         df = clipped.to_dataframe()
-        print(df)
+        # print(df)
+        df_final = df.groupby('time', as_index = True)['RAINRATE'].mean()*3600 ## to convert mm/s to mm/h 
+        # print(df_final.values)
+        asset_forecasts = pd.DataFrame()
 
+        asset_forecasts['time'],asset_forecasts['rainfall']= [df_final.index,df_final.values]
+        asset_forecasts['asset_id'] = row['asset_id']
+        # print(asset_forecasts)
+        results.append(asset_forecasts)
+
+    results = pd.concat(results)
+    # print(results)
+
+    return results 
+
+
+
+def tranform_sentinel_forecast(sentinels):
+    # print(assets.head())
+
+    path = 'forecasts/nwm/nwm_data/{}/00'.format(now.strftime("%Y_%m_%d_%H"))
+    # print(path)
+
+    glob_pattern = os.path.join(path, '*.nc' )
+
+    try: 
+        dsx = xr.open_mfdataset(glob_pattern, engine='h5netcdf',decode_times=True,combine ='by_coords').load()
+        # print(dsx)
+        dsx = dsx.rio.write_crs('esri:102001')
+
+        logger.info('opening multiple netCDF files')
+    except Exception as er:
+        logger.error(str(er))
+
+    results = []
+
+    for index, row in assets.iterrows():
+        print('asset: {}'.format(row['asset_id']))
+        clipped = dsx.rio.clip(row['geom'],'esri:102001')
+        df = clipped.to_dataframe()
+        # print(df)
+        df_final = df.groupby('time', as_index = True)['RAINRATE'].mean()*3600 ## to convert mm/s to mm/h 
+        # print(df_final.values)
+        asset_forecasts = pd.DataFrame()
+
+        asset_forecasts['time'],asset_forecasts['rainfall']= [df_final.index,df_final.values]
+        asset_forecasts['asset_id'] = row['asset_id']
+        # print(asset_forecasts)
+        results.append(asset_forecasts)
+
+    results = pd.concat(results)
+    # print(results)
+
+    return results 

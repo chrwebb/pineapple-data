@@ -15,7 +15,7 @@ assets = get_assets_id_and_geom(db)
 sentinels = get_sentinels_id_and_geom(db)
 # print(sentinels.head())
 
-# processing.nwm_etl()
+processing.nwm_etl()
 
 processing.nwm_transform(assets)
 
