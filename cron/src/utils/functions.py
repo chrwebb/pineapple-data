@@ -70,3 +70,19 @@ def get_sentinels_id_and_geom(db):
 	cols = [ i[0] for i in cursor.description]
 	sentinels = pd.DataFrame(cursor.fetchall(), columns = cols)
 	return sentinels
+
+def get_model_srtext(db, model_name):
+
+	query = """
+		SELECT
+			srtext
+		FROM
+			spatial_ref_sys
+		WHERE
+			auth_name=%(model_name)s;
+	"""
+
+	cursor = db.conn.cursor()
+	cursor.execute(query, {'model_name':model_name})
+
+	return cursor.fetchall()[0][0]

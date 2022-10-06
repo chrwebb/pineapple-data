@@ -3,6 +3,7 @@ from utils.functions import setup_logging
 from database import db
 from utils.functions import get_assets_id_and_geom
 from utils.functions import get_sentinels_id_and_geom
+from utils.functions import get_model_srtext
 setup_logging()
 
 # processing.hrdps_etl()
@@ -15,9 +16,11 @@ assets = get_assets_id_and_geom(db)
 sentinels = get_sentinels_id_and_geom(db)
 # print(sentinels.head())
 
+sr_text = get_model_srtext(db, "nwm")
+
 processing.nwm_etl()
 
-processing.nwm_transform(assets)
+processing.nwm_transform(assets, sr_text)
 
 
 # import requests
